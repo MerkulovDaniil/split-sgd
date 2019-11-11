@@ -3,3 +3,5 @@ Draft/main.synctex.gz
 *.out
 *.log
 *.aux
+*.bbl
+*.blg
