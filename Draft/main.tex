@@ -50,6 +50,8 @@ Bolshoy Boulevard 30, bld. 1, Moscow, Russia 121205 \\
 We present different view on stochastic optimization
 \end{abstract}
 
+\tableofcontents
+
 \section{Introduction}
 A lot of practical problems arising in machine learning require minimization of a finite sample average which can be written in the form
 \begin{equation}\label{strang:finitesum}
@@ -57,7 +59,7 @@ A lot of practical problems arising in machine learning require minimization of 
 \end{equation}
 where the sum goes over the \emph{minibatches} of the original dataset. Vanilla stochastic gradient descent (SGD) method (\cite{robbins1951stochastic})has consists in sequential step in the direction of the gradient of $f_i(\theta)$, where $i$ is to be chosen randomly from $1$ to $n$ without replacement.
 $$
-    \theta_{k+1} = \theta_{k} - h_{k} \nabla f_i.
+\theta_{k+1} = \theta_{k} - h_{k} \nabla f_i.
 $$
 Gradient descent method can be considered as an Euler discretization of the ordinary differential equation (ODE) of the form of the gradient flow
 \begin{equation}\label{strang:euler}
@@ -66,29 +68,6 @@ Gradient descent method can be considered as an Euler discretization of the ordi
 In continuous time, SGD if often analyzed by introducing a noise into the right-hand side of \eqref{strang:euler}. However, for real dataset the distribution of the noise obtained by replacing the full gradient by its minibatch variant is not known and can be different for different problems. Instead, we propose a new view on the SGD as a \emph{first-order splitting scheme} for \eqref{strang:euler}, thus shedding a new light on SGD-type algorithms. Moreover, we interpret stochastic average gradient (SAG)\cite{schmidt2017minimizing} approach as the \emph{splitting scheme with rebalancing}. This representation allows to use more efficient splitting schemes for the approximation of the full gradient flow. We show, that second-order Marchuk/Strang splitting scheme (\cite{marchuk1968some}, \cite{strang1968construction}) provides faster convergence of the SAG method, which we call \emph{SAG2} method. In implementation, the second-order scheme consists in a sequential processing of minibatches first from $1$ to $m$, and then from $m$ to $1$, i.e. a single iteration of SAG2 has the same cost as two iterations of SAG.
 \todo[inline]{The convergence is faster, but the number of iterations is also greater. That's not the point, however, we need to remember about SAG method, so, let's leave as is for now.}
 
-% https://www.lebesgue.fr/sites/default/files/attach/Alexander_Ostermann.pdf
-
-% $$
-% \min_{\theta \in \sR^n} \dfrac{1}{m}\sum\limits_{i=1}^m f_i(\theta) = \min_{\theta \in \sR^n} \frac{1}{2} \left( f_1(\theta) + f_2(\theta)\right)
-% $$
-
-% Let us denote by $g_i^k = \nabla f_i(\theta_k)$, than, the vanilla gradient descent [\cite{cauchy1847methode}] will be written as
-
-% $$
-% \theta_{k+1} = \theta_k - \frac{h}{2} \left( g^k_1(\theta) + g^k_2(\theta)\right)
-% $$
-
-% This method is a simple numerical interpretation as the Euler's scheme integration of the following ODE:
-
-% \begin{equation}
-%     \dfrac{\partial \theta}{\partial t} = - \frac{1}{2} \left( g_1(\theta) + g_2(\theta)\right)
-%     \label{GradientFlow}
-% \end{equation}
-
-% The right hand side of a (\ref{GradientFlow}) is a full gradient. In stochastic gradient descent method [\cite{robbins1951stochastic}] each iteration could be viewed as a noisy version of the full gradient - each epoch will consist of doing step through the first minibatch gradient $g_1$, then through the second $g_2$. From this point of view we immediately have connection with splitting methods [\cite{marchuk1968some}, \cite{strang1968construction}] of integrating ODE's: we split the full right hand side into the sequence of independent components. In other words, \textit{vanilla SGD could be considered as a splitting scheme of a full gradient descent method}.
-
-% Splitting methods are well-known methods for solution of ODE's. A good systematic review is presented in [\cite{macnamara2016operator}]. However, it is well known, that simple splitting schemes do not preserve steady state. That's why the rebalance
-% \todo[inline]{Here we add some motivation about rebalancing. Don't worry, if the introduction will contain more, than 1 page. Don't be short}
 \textbf{Contributions}
 \begin{itemize}
     \item We show, that vanilla SGD could be considered as a splitting scheme for a full gradient flow.
@@ -144,10 +123,10 @@ where $\left[ g_1, g_2\right] = \dfrac{d g_1}{d \theta} g_2 - \dfrac{d g_2}{d \t
 
 Note, that the basic idea of splitting could be also applied, when the number of terms in the right-hand side of ODE is greater, than two. In this case splitting scheme will take the following form:
 \begin{equation}\label{strang:marchuk}
-\theta^I(h) = \theta_m(h) \circ \theta_{m-1} \circ \ldots \circ \theta_2(h) \circ \theta_1(h) \circ \theta_0
+	\theta^I(h) = \theta_m(h) \circ \theta_{m-1} \circ \ldots \circ \theta_2(h) \circ \theta_1(h) \circ \theta_0
 \end{equation}
 \begin{equation}\label{strang:strang}
-\theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2\left(\frac{h}{2}\right) \circ\ldots \theta_m(h) \ldots \theta_2\left(\frac{h}{2}\right) \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
+	\theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2\left(\frac{h}{2}\right) \circ\ldots \theta_m(h) \ldots \theta_2\left(\frac{h}{2}\right) \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
 \end{equation}
 
 \subsection{SGD as approximation for the Gradient Flow equation}
@@ -197,7 +176,78 @@ Moreover, we can conclude, that \textit{one epoch of SGD is just the splitting s
 
 This idea gives additional intuition on the method. Both approaches are solving local problems through the Euler discretization. Given an information about the Euler scheme limitation, why not solve these local problems more accurate?
 
+\subsection{Upper bound on the global splitting error}
 
+Suppose, that we have only two batches, and the problem \eqref{strang:linearlst} is consistent, i.e. there exists an exact solution $\theta_*$ such as $X \theta_* = y$. The GD flow has the form
+\begin{equation}\label{strang:model1}
+    \frac{d \theta}{d t} = -X^{\top} (X \theta - y) = -X^{\top} X(\theta - \theta_*) = -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\theta - \theta_*),
+\end{equation}
+i.e. the splitting scheme corresponds to a linear operator splitting
+
+$$A = A_1 + A_2, \quad A = -X^{\top} X, \quad A_i = -X^{\top}_i X_i, \quad i = 1, 2.$$
+
+Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\theta_* = 0$,
+
+Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
+$$A_i = Q_i B_i Q^*_i,$$
+where $Q_i$ is an $N \times r_i$ matrix with orthonormal columns.  The following Lemma gives the representation of the matrix exponents of such matrices.
+\begin{lemma}\label{strang:lemexp}
+Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
+\begin{equation}\label{strang:lrexp}
+    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
+\end{equation}
+\end{lemma}
+To prove \eqref{strang:lrexp} we note that
+$$e^{t A} = \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} =
+I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = (I - QQ^*) + Q e^{t B} Q^*.
+$$
+
+\begin{lemma}
+	\label{strang:lemupper_2}
+	Let $A_1, A_2 \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_1} \leq p$ and $\operatorname{rank}{A_2} \leq p$. While the sum of those matrices has full rank, i.e. $A = A_1 + A_2, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
+
+	\begin{equation}\label{strang:lemupper}
+		\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \|(I - Q_2Q_2^*)(I - Q_1Q_1^*)\|
+	\end{equation}
+\end{lemma}
+\begin{proof}
+	The proof is straightforward. We will use the low rank matrix exponential decomposition from the Lemma \ref{strang:lemexp}
+	$$
+	e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
+	$$
+	\begin{align*}
+	\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
+	= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* +  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| = \Pi_2 \Pi_1
+	\end{align*}
+	Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \dfrac{A + A^\top}{2}\right)$ - the logarithmic norm.
+\end{proof}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.6\textwidth]{upper_bound_2.pdf}
+	\caption{Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}
+	\label{strang:fig:upper_bound_2}
+\end{figure}
+
+The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One can easily see significant difference between existing global upper bounds for that case (\cite{sheng1994global}) and derived upper bound.
+
+\begin{theorem}\label{strang:theorem_uppbound}
+	Let $A_1, A_2, \ldots, A_b \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_i} \leq p, \;\forall i = 1, \ldots, b$. While the sum of those matrices has full rank, i.e. $A = \sum\limits_{i=1}^b A_i, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
+
+	\begin{equation}\label{strang:global_error_upper_bound}
+		\lim_{t \to \infty}\| e^{A_bt} \cdot \ldots \cdot e^{A_1t} - e^{At}\| = \left\|\prod\limits_{i=1}^b \Pi_{b-i+1}\right\|,
+	\end{equation}
+	where $\Pi_i = I - Q_iQ_i^*$ and $A_i = Q_iB_iQ_i^*$ and $Q_i$ ia a matrix with orthonormal columns. 
+\end{theorem}
+
+\begin{figure}[h!]
+	\centering
+	\includegraphics[width=0.6\textwidth]{upper_bound_many.pdf}
+	\caption{Global upper bound on the splitting scheme in case of $40$ summands in the right-hand side. }
+	\label{strang:fig:upper_bound_many}
+\end{figure}
+
+The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validity of the presented upper bound.
 
 \section{Linear least squares}
 \subsection{Problem}
@@ -283,90 +333,8 @@ We need to bound the norm of the matrix $E_1(t)$ for all $h$, not only for small
     \Vert E(t) \Vert \leq \frac{t^2}{2} \Vert [ A_1, A_2] \Vert \max \{ e^{t \mu(A_1 + A_2}), e^{t(\mu(A_1) + \mu(A_2))}\},
 \end{equation}
 where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in our case all matrices are symmetric, thus these are largest eigenvalues of the matrix. The estimate \eqref{strang:sheng} and its generalization to a larger number of summands is not very useful for us, since we will have matrices $X_i$ that have fewer rows, than column, i.e. matrices $A_i$ will have zero eigenvalues, thus the the maximum term will be equal to $1$, and the upper bound will grow quadratically with $h$. In reality, the behaviour is very different, see Figure~\ref{strang:modelfig}. In this example, we took $N=p=2$, batch size $1$. It can be seen, that the true error reaches a plateu, whereas the upper bound is growing quadratically with $t$.
-\begin{figure}
-\includegraphics[width=0.8\textwidth]{Errors.png}
-\caption{The estimate from \eqref{strang:sheng} and the true error for a model example}\label{strang:modelfig}
-\end{figure}
+
 We will now prove a better upper bound, that takes into account  possible zero eigenvalues of the matrices $A_1$ and $A_2$.
-\subsection{Upper bound on the global splitting error}
-\todo[inline]{This section is TBD!}
-
-Suppose, that we have only two batches, and the problem \eqref{strang:linearlst} is consistent, i.e. there exists an exact solution $\theta_*$ such as $X \theta_* = y$. The GD flow has the form
-\begin{equation}\label{strang:model1}
-    \frac{d \theta}{d t} = -X^{\top} (X \theta - y) = -X^{\top} X(\theta - \theta_*) = -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\theta - \theta_*),
-\end{equation}
-i.e. the splitting scheme corresponds to a linear operator splitting
-
-$$A = A_1 + A_2, \quad A = -X^{\top} X, \quad A_i = -X^{\top}_i X_i, \quad i = 1, 2.$$
-
-Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\theta_* = 0$,
-
-Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
-$$A_i = Q_i B_i Q^*_i,$$
-where $Q_i$ is an $N \times r_i$ matrix with orthonormal columns.  The following Lemma gives the representation of the matrix exponents of such matrices.
-\begin{lemma}\label{strang:lemexp}
-Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
-\begin{equation}\label{strang:lrexp}
-    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
-\end{equation}
-\end{lemma}
-To prove \eqref{strang:lrexp} we note that
-$$e^{t A} = \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} =
-I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = (I - QQ^*) + Q e^{t B} Q^*.
-$$
-
-To derive the upper bound, we will follow the ideas of \cite{sheng1994global}.
-The error \eqref{strang:error} satisfies the differential equation
-$$E'(t) = (A_1 + A_2) E_1(t) + [A_2, e^{A_1 t}] e^{t A_2}, $$
-with initial condition $E(0) = 0.$
-Thus,
-\begin{equation}\label{strang:Erepr}
-E(t) = \int^t_0 e^{(t-\tau)(A_1 + A_2)} [A_2, e^{\tau A_1}] e^{\tau A_2} d\tau.
-\end{equation}
-The commutator
-$$S(\tau) = [A_2, e^{\tau A_1}]$$
-satisfies the differential equation
-$$
-  S'(\tau) = A_1 S(\tau) + [A_2, A_1] e^{\tau A_1},
-$$
-with initial condition $S(0) = 0,$
-thus
-\begin{equation}\label{strang:Srepr}
-S(\tau) = \int^{\tau}_0 e^{(\tau - s) A_1}[A_2, A_1] e^{s A_1} ds.
-\end{equation}
-
-Putting \eqref{strang:Erepr} and \eqref{strang:Srepr} together, we get
-\begin{equation}\label{strang:errepr}
-E(t) = \int^t_0 d \tau \int^{\tau}_0e^{(t-\tau)(A_1 + A_2)} e^{(\tau - s) A_1}[A_2, A_1] e^{s A_1} e^{\tau A_2} ds.
-\end{equation}
-Now we need to work on the inner term. Using Lemma~\ref{strang:lemexp} we have
-\begin{equation}\label{strang:Sexpr2}
-S(\tau) = (I - Q_1 Q^*_1 + Q_1 e^{(\tau - s) B_1} Q_1^* ) [A_2, A_1] \left(I - Q_1 Q^*_1 + Q_1 e^{s B_1} Q_1^* \right).
-\end{equation}
-Some simplifications are possible. Indeed,
-$$(I - Q_1 Q^*_1)[A_2, A_1](I - Q_1 Q^*_1) = 0,$$
-since $(I - Q_1 Q^*_1) A_1 = 0$ and $ A_1 (I - Q_1 Q^*_1) = 0,$
-and there will be $3$ terms in the expansion, which are estimated in the same way.
-
-We have
-
-$$\Vert E(t) \Vert \leq E_1 + E_2 + E_3,$$
-
-
-We will need to compute the integral
-$$\int^t_0 d \tau \int^{\tau}_0 e^{\beta \tau} e^{\gamma s} ds =
- \frac{\frac{1 - e^{\beta t}}{\beta} + \frac{e^{(\beta + \gamma) t}-1}{\beta + \gamma}}{\gamma}
-$$
-For the terms in the estimate of $E(t)$ we have the following. For $E_1$, we have
-
-$$\beta = -\mu(A_1 + A_2) + \mu(A_2), \quad \gamma = \mu(B_1), $$
-for $E_2$
-we have
-$$\beta = -\mu(A_1 + A_2) + \mu(A_2) + \mu(B_1), \gamma = -\mu(B_1).$$
-
-After simplifications and assuming $\mu(A_2) = 0$, we get
-$$\Vert E_1 + E_2 \Vert \leq  \frac{\Vert [A_1, A_2]\Vert}{\mu(A_1 + A_2) \mu(B_1)}.  $$
-The estimate for $E_3$ is the same as for the classical approach, but with $\mu(A_1)$ replaced by $\mu(B_1)$.
 
 \section{Binary logistic regression}
 \subsection{Problem}
@@ -384,6 +352,8 @@ The gradient flow equation will be written as follows:
 \begin{equation}\label{strang:LogReg_GF}
 \dfrac{d \theta}{d t} = - \dfrac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
 \end{equation}
+
+\section{Softmax regression}
 
 \section{Results}
 \subsection{Precise splitting approximation is way more robust to the stepsize, than SGD}
@@ -411,175 +381,6 @@ The gradient flow equation will be written as follows:
 \caption{Binary logistic regression on 0 and 1 from MNIST dataset}
 \end{figure}
 
-% Bounding this norm from above can be done using the same techniques as used for bounding the error of the splitting method. The differential equation for $F$ reads
-% $$F' = A_1 e^{A_1 t} e^{A_2 t} + e^{A_1 t} A_2 e^{A_2 t},$$ therefore
-
-% $$F' = A_1 F + A_2 F - A_2 e^{A_1 t} e^{A_2 t} + e^{A_1 t} A_2 e^{A_2 t} = (A_1 + A_2) F - [A_2, e^{A_1 t}] e^{A_2 t},$$
-% with initial condition $F(0) = I$.
-% The solution of this equation is done as
-
-% $$F(t) = C(t) e^{(A_1 + A_2) t}, \quad C(0)=I$$
-
-% $$C' = -e^{-(A_1 + A_2) t} [A_2, e^{A_1 t}]e^{A_2 t}$$
-
-% $$C(t) =
-% \begin{equation*}
-% \begin{split}
-%     E_1 = \int^{t}_0  d \tau \int^{\tau}_0 e^{(t-\tau) \mu(A_1 + A_2)} \Vert [A_2, A_1] \Vert e^{ \mu(B_1) s}  ds = \int^t_0 e^{(t - \tau)\mu(A_1 + A_2)}\frac{e^{\mu(B_1) \tau} - 1}{\mu(B_1)} d \tau= \\=
-% \frac{e^{t \mu(A_1 + A_2)}}{\mu(B_1)} \int^t_0 (e^{(-\mu(A_1 + A_2) + \mu(B_1))\tau} - e^{-\tau \mu(A_1 + A_2)}) d \tau  = \frac{e^{-t \beta_2 }}{\mu(B_1)}\left(
-% \frac{e^{\beta_1 t} - 1}{\beta_1} - \frac{e^{\beta_2 t}-1}{\beta_2}
-% \right),
-% \end{split}
-% \end{equation*}
-% where $\beta_1 = \mu(B_1) + \beta_2, \quad \beta_2 = -\mu(A_1 + A_2).$
-% In fact, we can be much simpler:
-
-% $$[A_2, e^{\tau A_1}] = [A_2, I - Q_1 Q^*_1 + Q_1 e^{\tau B_1} Q^*_1$$
-
-
-% However, it is clearly seen, that this is nothing else, that first order splitting scheme.
-% $$
-% \theta_{k+2} = g_2 \circ g_1
-% $$
-% \section{SAG as a splitting scheme with rebalancing}
-% \subsection{Rebalancing splitting schemes for ODEs}
-% The goal of optimization is to find the point such that
-% $$
-%   \sum_{i=1}^m \nabla f_i (\theta_*) = 0.
-% $$
-% In terms of ODEs, we are looking for the steady state of the gradient flow \eqref{strang:gradientflow}. A splitting scheme is an approximation of the true gradient flow: the smaller the timestep $h$, the better is approximation, thus we expect that for $t \rightarrow \infty$ we get a good approximation of the steady state. However, splitting schemes suffer from an important drawback: for a fixed $h$, the steady state of the systems \eqref{strang:marchuk} and \eqref{strang:strang} is different from the true steady state. A solution of this problem can be given by using the technique of \emph{rebalancing}, described in \cite{macnamara2016operator}. The idea is easily understood for the problem \eqref{strang:gradientflow}. For given $g_1$ and $g_2$ we can modify them by adding and subtracting a constant term:
-% $$g_1(\theta) + g_2(\theta) = (g_1(\theta) - c) + (g_2(\theta) + c) = \hat{g}_1(\theta) + \hat{g}_2(\theta),$$
-% and apply splitting with $\hat{g}_1(\theta)$ and $\hat{g}_2(\theta)$. The $c$ should be selected as the steady state is the same as for the original system. It can be achived by setting
-% \begin{equation}\label{strang:2dcase}
-%     c = \frac{1}{2}(g_1(\theta_*) - g_2(\theta_*)),
-% \end{equation}
-% where $\theta_*$ is the steady state of \eqref{strang:gradientflow}, i.e.
-% $$
-%   g_1(\theta_*) + g_2(\theta_*) = 0.
-% $$
-% Indeed, for the first splitting step we have the right-hand side of the ODE at $\theta=\theta_*$ equal to
-% $$
-%     \hat{g}_1(\theta_*) = \frac{1}{2}\left(g_1(\theta_*) + g_2(\theta_*) \right)= 0,
-% $$
-% and for the second splitting step we have
-% $$ \hat{g}_2(\theta_*) = \frac{1}{2}\left(g_1(\theta_*) + g_2(\theta_*)\right) = 0, $$
-% i.e. $\theta = \theta_*$ is the steady state for both of the steps, i.e. the steady state of the whole integrator. Of course, during computations we do not know $\theta_*$, so before each splitting step we just replace $\theta_*$ by its current approximation, and use the compute $c$ in the updates. It can be shown that such iteration still has the same steady state. In the following we provide the generalization of rebalancing technique from two summands to the general case.
-% \subsection{Rebalancing splitting schemes for arbitrary number of summands}\label{strang:}
-% The theorem below describes the explicit process of rebalancing in case of many summands:
-
-% \begin{theorem} For any number $n$ there is a rebalancing splitting scheme $\hat{g}_i$, which preserve the steady state of the following ordinary differential equation:
-
-% \[
-% \dfrac{d \theta}{\partial t} = - \frac{1}{n} \sum\limits_{i=1}^n g_i(\theta),
-%     \label{strang:gradientflow_multi}
-% \]
-% i.e. $\exists \hat{g}_1(\theta), \ldots, \hat{g}_n(\theta): \sum\limits_{i=1}^n  g_i(\theta) = \sum\limits_{i=1}^n  \hat{g}_i(\theta)$, and $\hat{g}_1(\theta_*) = \ldots = \hat{g}_n(\theta_*) = 0$ with $\dfrac{\partial \theta_*}{\partial t}  = - \frac{1}{n} \sum\limits_{i=1}^n g_i(\theta_*) = 0$. And this update is given by the formula:
-
-% \begin{equation}
-% \label{strang:rebalancing_multi}
-% \hat{g}_i(\theta) = g_i(\theta) + \dfrac{\sum\limits_{j\neq i=1}^n g_j(\theta_*) - (n-1)g_i(\theta_*)}{n}
-% \end{equation}
-% \end{theorem}
-
-% \begin{proof} Firstly, we check the integrity of the replacement:
-% \begin{align*}
-% \sum\limits_{i=1}^n  \hat{g}_i(\theta) &= \sum\limits_{i=1}^n \left( g_i(\theta) + \dfrac{\sum\limits_{j\neq i=1}^n g_j(\theta_*) - (n-1)g_i(\theta_*)}{n}   \right) \\
-% & =\sum\limits_{i=1}^n g_i(\theta) + \dfrac{(n-1)\sum\limits_{i=1}^n g_i(\theta_*) - (n-1)\sum\limits_{i=1}^n g_i(\theta_*)}{n} =  \sum\limits_{i=1}^n g_i(\theta)\\
-% \end{align*}
-
-% Then, we check the steady state $\theta_*:  \sum\limits_{i=1}^n g_i(\theta_*) = 0$ of each stage of a splitting scheme:
-
-% $$
-% \hat{g}_i(\theta_*) = g_i(\theta_*) + \dfrac{\sum\limits_{j\neq i=1}^n g_j(\theta_*) - (n-1)g_i(\theta_*)}{n} = \dfrac{1}{n} \sum\limits_{i=1}^n g_i(\theta_*) = 0 \qquad \forall i = 1, \ldots, n
-% $$
-% \end{proof}
-
-
-% % Splitting methods are well-known methods for solution of ODEs. A good systematic review is presented in (\cite{macnamara2016operator}). However, it is well known, that simple splitting schemes do not preserve steady state. That's why the rebalancing is needed.
-
-% % \begin{algorithm}[h!]
-% % 	\caption{SAG method for minimizing $\frac{1}{n}\sum_{i=1}^nf_i(\theta)$ with step size $\alpha$.}
-% % \label{alg:SAG1}
-% % \begin{algorithmic}
-% % \STATE $g = 0$, $y_i = 0$ for $i = 1,2,\dots,n$
-% % \FOR{$k=0,1,\dots$}
-% % \STATE Shuffle the indicies $i = 1,2,\dots,n \to j = j_1, j_2, \ldots, j_n$
-% % \FOR{$i = 1,2,\dots,n$}
-% % \STATE $g = g - y_{j_i} + f_{j_i}'(\theta_k)$
-% % \STATE $y_{j_i} = f_{j_i}'(\theta_k)$
-% % \STATE $\theta_{k+1} = \theta_k - \frac{\alpha}{n} g$
-% % \ENDFOR
-% % \FOR{$i = 1,2,\dots,n$}
-% % \STATE $g = g - y_{j_i} + f_{j_i}'(\theta_k)$
-% % \STATE $y_{j_i} = f_{j_i}'(\theta_k)$
-% % \STATE $\theta_{k+1} = \theta_k - \frac{\alpha}{n} g$
-% % \ENDFOR
-% % \ENDFOR
-% % \end{algorithmic}
-% % \end{algorithm}
-
-% \subsection{Interpretation of SAG}
-% The algorithm presented
-% \section{SAG2 method}
-
-% \begin{algorithm}[h!]
-% 	\caption{SAG2 method for minimizing $\frac{1}{n}\sum_{i=1}^nf_i(\theta)$ with step size $\alpha$.}
-% \label{alg:SAG2}
-% \begin{algorithmic}
-% \STATE $g = 0$, $y_i = 0$ for $i = 1,2,\dots,n$
-% \FOR{$k=0,1,\dots$}
-% \STATE Shuffle the indicies $i = 1,2,\dots,n \to j = j_1, j_2, \ldots, j_n$
-% \FOR{$i = 1,2,\dots,n$}
-% \STATE $g = g - y_{j_i} + f_{j_i}'(\theta_k)$
-% \STATE $y_{j_i} = f_{j_i}'(\theta_k)$
-% \STATE $\theta_{k+1} = \theta_k - \frac{\alpha}{n} g$
-% \ENDFOR
-% \FOR{$i = n, n-1, \ldots, 1$}
-% \STATE $g = g - y_{j_i} + f_{j_i}'(\theta_k)$
-% \STATE $y_{j_i} = f_{j_i}'(\theta_k)$
-% \STATE $\theta_{k+1} = \theta_k - \frac{\alpha}{n} g$
-% \ENDFOR
-% \ENDFOR
-% \end{algorithmic}
-% \end{algorithm}
-
-
-% \section{Experiments}
-
-% \subsection{Linear Least Squares}
-% \begin{figure}[h]
-% \begin{center}
-% %\framebox[4.0in]{$\;$}
-%  \includegraphics[width=\linewidth]{SAG_exp.pdf}
-%   \caption{Linear Least Squares on artificial data. PLACEHOLDER}
-% \end{center}
-% \end{figure}
-
-% \subsection{CNN on FashionMNIST}
-% \begin{figure}[h]
-% \begin{center}
-% %\framebox[4.0in]{$\;$}
-%  \includegraphics[width=\linewidth]{SAG_exp.pdf}
-%   \caption{CNN training on Fashion MNIST. PLACEHOLDER}
-% \end{center}
-% \end{figure}
-% The table below describes results of two different methods with random initialization over 50 runs. SAG1 here stands for the First Order Strang splitting, while SAG2 reffers for the modified version.
-% \begin{center}
-%   \includegraphics[width=0.33\linewidth]{SAG_50.png}
-% \end{center}
-
-% \subsection{CNN on MNIST}
-
-
-% \begin{figure}[h]
-% \begin{center}
-% %\framebox[4.0in]{$\;$}
-%  \includegraphics[width=\linewidth]{SAG_exp.pdf}
-%   \caption{CNN training on MNIST. PLACEHOLDER}
-% \end{center}
-% \end{figure}
-
-
 
 
 
@@ -589,16 +390,3 @@ The gradient flow equation will be written as follows:
 \bibliographystyle{iclr2019_conference}
 
 \end{document}
-
-
-% One of the classical examples is ordinary least-squares problem:
-% $$
-% \theta^* = \argmin\limits_{\theta \in \sR^n}\dfrac{1}{m}\|X \theta - y \|^2_2,
-% $$
-% where the $X \in \sR^{m \times n}$ is the design matrix and $y \in \sR^m$ - right-hand side vector associated with the problem. Another useful example is logistic regression:
-
-% $$
-% \theta^* = \argmin\limits_{\theta \in \sR^n}\dfrac{1}{m}\sum\limits_{i=1}^m \ln\left( 1 + \exp\left(-y_i x_i^\top \theta_i\right)\right),
-% $$
-
-% where the $x_i \in \sR^n$ - $i$-th row of a design matrix $X$ and $y_i = \{\pm 1\}$ - corresponding label.\textbf{}\textbf{}
