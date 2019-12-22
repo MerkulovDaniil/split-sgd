@@ -16,7 +16,7 @@
 % \usepackage[pdftex]{graphicx}
 
 
-\title{Strang Optimization Splitting}
+\title{On the connection between stochastic optimization and splitting scheme for ODE.}
 
 % Authors must not appear in the submitted version. They should be hidden
 % as long as the \iclrfinalcopy macro remains commented out below.
@@ -47,10 +47,14 @@ Bolshoy Boulevard 30, bld. 1, Moscow, Russia 121205 \\
 \maketitle
 
 \begin{abstract}
-We present different view on stochastic optimization
+We present different view on stochastic optimization, which goes back to the splitting schemes for approximate solutions of ODE. In this work we provide a connection between stochastic gradient descent approach and first order splitting scheme for ODE. We present, that the Kaczmarz method is the limit case of the splitting scheme for unitary batch SGD linear least squares approach. We support our findings with empirical tests.
 \end{abstract}
 
 \tableofcontents
+
+%================================================
+% Introduction
+%================================================
 
 \section{Introduction}
 A lot of practical problems arising in machine learning require minimization of a finite sample average which can be written in the form
@@ -65,23 +69,21 @@ Gradient descent method can be considered as an Euler discretization of the ordi
 \begin{equation}\label{strang:euler}
     \frac{d \theta}{d t} = -\nabla f(\theta).
 \end{equation}
-In continuous time, SGD if often analyzed by introducing a noise into the right-hand side of \eqref{strang:euler}. However, for real dataset the distribution of the noise obtained by replacing the full gradient by its minibatch variant is not known and can be different for different problems. Instead, we propose a new view on the SGD as a \emph{first-order splitting scheme} for \eqref{strang:euler}, thus shedding a new light on SGD-type algorithms. Moreover, we interpret stochastic average gradient (SAG)\cite{schmidt2017minimizing} approach as the \emph{splitting scheme with rebalancing}. This representation allows to use more efficient splitting schemes for the approximation of the full gradient flow. We show, that second-order Marchuk/Strang splitting scheme (\cite{marchuk1968some}, \cite{strang1968construction}) provides faster convergence of the SAG method, which we call \emph{SAG2} method. In implementation, the second-order scheme consists in a sequential processing of minibatches first from $1$ to $m$, and then from $m$ to $1$, i.e. a single iteration of SAG2 has the same cost as two iterations of SAG.
-\todo[inline]{The convergence is faster, but the number of iterations is also greater. That's not the point, however, we need to remember about SAG method, so, let's leave as is for now.}
+In continuous time, SGD if often analyzed by introducing a noise into the right-hand side of \eqref{strang:euler}. However, for real dataset the distribution of the noise obtained by replacing the full gradient by its minibatch variant is not known and can be different for different problems. Instead, we propose a new view on the SGD as a \emph{first-order splitting scheme} for \eqref{strang:euler}, thus shedding a new light on SGD-type algorithms. This representation allows to use more efficient splitting schemes for the approximation of the full gradient flow. We show, that second-order Marchuk/Strang splitting scheme (\cite{marchuk1968some}, \cite{strang1968construction}) provides faster convergence 
+
+% We'll leave SAG for a moment.. Moreover, we interpret stochastic average gradient (SAG)\cite{schmidt2017minimizing} approach as the \emph{splitting scheme with rebalancing} of the SAG method, which we call \emph{SAG2} method. In implementation, the second-order scheme consists in a sequential processing of minibatches first from $1$ to $m$, and then from $m$ to $1$, i.e. a single iteration of SAG2 has the same cost as two iterations of SAG.
 
 \textbf{Contributions}
 \begin{itemize}
     \item We show, that vanilla SGD could be considered as a splitting scheme for a full gradient flow.
     \item We demonstrate the connection between rebalancing splitting and stochastic average gradient method.
     \item We propose new optimization method, SAG2 based on second order splitting scheme and show that it gives better convergence, than the standard SAG method.
+    % Перспективные вещи - аналитическая связь размера батча и величины шага, устойчивость к шагу
 \end{itemize}
-\section{Related work}
-\todo[inline]{Lets write it -- still seems it helps}
 
-
-
-% https://na.math.kit.edu/marlis/download/talks/05helsinki_ostermann.pdf
-% https://ocw.mit.edu/courses/mathematics/18-336-numerical-methods-for-partial-differential-equations-spring-2009/lecture-notes/MIT18_336S09_lec20.pdf
-% https://hal.archives-ouvertes.fr/hal-01183745/document
+%================================================
+% SGD as a splitting scheme
+%================================================
 
 \section{SGD as a splitting scheme}
 
@@ -130,7 +132,7 @@ Note, that the basic idea of splitting could be also applied, when the number of
 \end{equation}
 
 \subsection{SGD as approximation for the Gradient Flow equation}
-Now we consider classical SGD method as a splitting scheme for the full gradient descent (\cite{cauchy1847methode}). Suppose, we have the simple finite sum minimization problem:
+Now we consider classical SGD method as a splitting scheme for the full gradient descent (\cite{cauchy1847methode}). Suppose, we have the simplest ($m=2$) finite sum minimization problem:
 $$
 \min_{\theta \in \sR^n} \dfrac{1}{m}\sum\limits_{i=1}^m f_i(\theta) = \min_{\theta \in \sR^n} \frac{1}{2} \left( f_1(\theta) + f_2(\theta)\right)
 $$
@@ -172,7 +174,7 @@ In order to establish the connection between splitting scheme and SGD we use the
 &\theta_{SGD} = \tilde{\theta}_{SGD} - h \nabla f_2 (\tilde{\theta}_{SGD}) &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
 \end{align*}
 
-Moreover, we can conclude, that \textit{one epoch of SGD is just the splitting scheme for the discretized Gradient Flow ODE with $2 \cdot h$ step size ($m \cdot h$ in case of $m$ batches)}
+Thus, we can conclude, that \textit{one epoch of SGD is just the splitting scheme for the discretized Gradient Flow ODE with $2 \cdot h$ step size ($m \cdot h$ in case of $m$ batches)}
 
 This idea gives additional intuition on the method. Both approaches are solving local problems through the Euler discretization. Given an information about the Euler scheme limitation, why not solve these local problems more accurate?
 
@@ -184,12 +186,16 @@ Suppose, that we have only two batches, and the problem \eqref{strang:linearlst}
 \end{equation}
 i.e. the splitting scheme corresponds to a linear operator splitting
 
-$$A = A_1 + A_2, \quad A = -X^{\top} X, \quad A_i = -X^{\top}_i X_i, \quad i = 1, 2.$$
+$$
+A = A_1 + A_2, \quad A = -X^{\top} X, \quad A_i = -X^{\top}_i X_i, \quad i = 1, 2.
+$$
 
 Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\theta_* = 0$,
 
 Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
-$$A_i = Q_i B_i Q^*_i,$$
+$$
+A_i = Q_i B_i Q^*_i,
+$$
 where $Q_i$ is an $N \times r_i$ matrix with orthonormal columns.  The following Lemma gives the representation of the matrix exponents of such matrices.
 \begin{lemma}\label{strang:lemexp}
 Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
@@ -249,8 +255,14 @@ The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One
 
 The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validity of the presented upper bound.
 
-\section{Linear least squares}
-\subsection{Problem}
+
+%================================================
+% Applications
+%================================================
+
+\section{Applications}
+\subsection{Linear least squares}
+\subsubsection{Problem}
 Let $f_i(\theta) = \Vert x_i^{\top} \theta - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
 \begin{equation}\label{strang:LLS}
    f(\theta) = \dfrac{1}{n}\Vert X \theta - y \Vert_2^2  = \dfrac{1}{n}\sum\limits_{i=1}^s\Vert X_i \theta - y_i \Vert_2^2\to \min_{\theta \in \mathbb{R}^p},
@@ -266,7 +278,7 @@ The gradient flow equation will be written as follows:
 \dfrac{d \theta}{d t} = - \dfrac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
 \end{equation}
 
-\subsection{Exact solution of the local problem}
+\subsubsection{Exact solution of the local problem}
 On each splitting approximation step we need to solve the local problem:
 \begin{equation}\label{strang:LLS_local_problem}
 \dfrac{d \theta}{d t} = - \dfrac{1}{n} X_i^\top( X_i \theta - y_i)
@@ -336,8 +348,11 @@ where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in
 
 We will now prove a better upper bound, that takes into account  possible zero eigenvalues of the matrices $A_1$ and $A_2$.
 
-\section{Binary logistic regression}
-\subsection{Problem}
+
+\subsubsection{Kaczmarz as the limit case of splitting}
+
+\subsection{Binary logistic regression}
+\subsubsection{Problem}
 In this classification task then problem \eqref{strang:finitesum} takes the following form:
 \begin{equation}\label{strang:LogReg}
    f(\theta) = -\dfrac{1}{n} \left(y_i \ln h_{\theta}(x_i)  + (1-y_i) \ln (1-h_{\theta}(x_i))\right) \to \min_{\theta \in \mathbb{R}^p},
@@ -353,11 +368,42 @@ The gradient flow equation will be written as follows:
 \dfrac{d \theta}{d t} = - \dfrac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
 \end{equation}
 
-\section{Softmax regression}
+
+\subsection{Softmax regression}
+\subsection{Problem}
+
+%================================================
+% Results
+%================================================
 
 \section{Results}
-\subsection{Precise splitting approximation is way more robust to the stepsize, than SGD}
-\subsubsection{Linear Least Squares}
+\subsection{Iteration comparison}
+\subsection{Time comparison}
+\subsection{Robustness to stepsize choosing}
+
+
+%================================================
+% Related work
+%================================================
+
+\section{Related work}
+\todo[inline]{Lets write it -- still seems it helps}
+
+
+
+% https://na.math.kit.edu/marlis/download/talks/05helsinki_ostermann.pdf
+% https://ocw.mit.edu/courses/mathematics/18-336-numerical-methods-for-partial-differential-equations-spring-2009/lecture-notes/MIT18_336S09_lec20.pdf
+% https://hal.archives-ouvertes.fr/hal-01183745/document
+
+
+%================================================
+% Appendix
+%================================================
+
+\appendix
+\section{Proofs}
+\section{Additional graphs}
+
 
 \begin{figure}
 \includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split0.001}.pdf} \\
@@ -369,7 +415,6 @@ The gradient flow equation will be written as follows:
 \caption{Linear Least Squares, $X \in \mathbb{R}^{200 \times 1000}, b = 10$}
 \end{figure}
 
-\subsubsection{Binary Logistic Regression}
 
 \begin{figure}
 \includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg0.001}.pdf} \\
@@ -380,9 +425,6 @@ The gradient flow equation will be written as follows:
 \includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg2.2e+02}.pdf}
 \caption{Binary logistic regression on 0 and 1 from MNIST dataset}
 \end{figure}
-
-
-
 
 \newpage
 
