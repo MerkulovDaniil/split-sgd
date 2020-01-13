@@ -1,60 +1,87 @@
-\documentclass{article} % For LaTeX2e
-\usepackage{iclr2019_conference,times}
+\documentclass{article}
 
-% Optional math commands from https://github.com/goodfeli/dlbook_notation.
-\input{math_commands.tex}
-\usepackage{todonotes}
+% Recommended, but optional, packages for figures and better typesetting:
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subfigure}
+\usepackage{booktabs} % for professional tables
+
+% hyperref makes hyperlinks in the resulting PDF.
+% If your build breaks (sometimes temporarily if a hyperlink spans a page)
+% please comment out the following usepackage line and replace
+% \usepackage{icml2020} with \usepackage[nohyperref]{icml2020} above.
 \usepackage{hyperref}
-\usepackage{url}
-\usepackage{algorithm}
-\usepackage{algorithmic}
-\usepackage{amsthm,amssymb}
-\usepackage[utf8]{inputenc}
+\graphicspath{{figures/}}
+\usepackage{amsmath,amsthm,amssymb}
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
-\graphicspath{{figures/}}
-% \usepackage[pdftex]{graphicx}
+
+% Attempt to make hyperref and algorithmic work together better:
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+
+% Use the following line for the initial blind version submitted for review:
+\usepackage{icml2020}
+
+% If accepted, instead use the following line for the camera-ready submission:
+% \usepackage[accepted]{icml2020}
 
 
-\title{On the connection between stochastic optimization and splitting scheme for ODE.}
+% The \icmltitle you define below is probably too long as a header.
+% Therefore, a short form for the running title is supplied here:
+\icmltitlerunning{Submission and Formatting Instructions for ICML 2020}
 
-% Authors must not appear in the submitted version. They should be hidden
-% as long as the \iclrfinalcopy macro remains commented out below.
-% Non-anonymous submissions will be rejected without review.
-
-\author{Daniil Merkulov \& Ivan Oseledets \\
-Skolkovo Institute of Science and Technology\\
-Center for Computational and Data-Intensive Science and Engineering\\
-Bolshoy Boulevard 30, bld. 1, Moscow, Russia 121205 \\
-\texttt{\{daniil.merkulov, i.oseledets\}@skoltech.ru} \\
-}
-
-% The \author macro works with any number of authors. There are two commands
-% used to separate the names and addresses of multiple authors: \And and \AND.
-%
-% Using \And between authors leaves it to \LaTeX{} to determine where to break
-% the lines. Using \AND forces a linebreak at that point. So, if \LaTeX{}
-% puts 3 of 4 authors names on the first line, and the last on the second
-% line, try using \AND instead of \And before the third author name.
-
-\newcommand{\fix}{\marginpar{FIX}}
-\newcommand{\new}{\marginpar{NEW}}
-
-\iclrfinalcopy % Uncomment for camera-ready version, but NOT for submission.
 \begin{document}
 
+\twocolumn[
+\icmltitle{On the connection between stochastic optimization and splitting scheme for ODE.}
 
-\maketitle
+% It is OKAY to include author information, even for blind
+% submissions: the style file will automatically remove it for you
+% unless you've provided the [accepted] option to the icml2020
+% package.
+
+% List of affiliations: The first argument should be a (short)
+% identifier you will use later to specify author affiliations
+% Academic affiliations should list Department, University, City, Region, Country
+% Industry affiliations should list Company, City, Region, Country
+
+% You can specify symbols, otherwise they are numbered in order.
+% Ideally, you should not use this facility. Affiliations will be numbered
+% in order of appearance and this is the preferred way.
+\icmlsetsymbol{equal}{*}
+
+\begin{icmlauthorlist}
+\icmlauthor{Daniil Merkulov}{sk}
+\icmlauthor{Ivan Oseledets}{sk}
+\end{icmlauthorlist}
+
+\icmlaffiliation{sk}{Center for Computational and Data-Intensive Science and Engineering, Skolkovo Institute of Science and Technology, Moscow, Russia}
+
+\icmlcorrespondingauthor{Daniil Merkulov}{daniil.merkulov@skoltech.ru}
+\icmlcorrespondingauthor{Ivan Oseledets}{i.oseledets@skoltech.ru}
+
+% You may provide any keywords that you
+% find helpful for describing your paper; these are used to populate
+% the "keywords" metadata in the PDF but will not be shown in the document
+\icmlkeywords{Stochastic gradient descent, ordinary differential equations, splitting scheme, Kaczmarz method, Optimization}
+
+\vskip 0.3in
+]
+
+% this must go after the closing bracket ] following \twocolumn[ ...
+
+% This command actually creates the footnote in the first column
+% listing the affiliations and the copyright notice.
+% The command takes one argument, which is text to display at the start of the footnote.
+% The \icmlEqualContribution command is standard text for equal contribution.
+% Remove it (just {}) if you do not need this facility.
+
+\printAffiliationsAndNotice{}  % leave blank if no need to mention equal contribution
+% \printAffiliationsAndNotice{\icmlEqualContribution} % otherwise use the standard text.
 
 \begin{abstract}
 We present different view on stochastic optimization, which goes back to the splitting schemes for approximate solutions of ODE. In this work we provide a connection between stochastic gradient descent approach and first order splitting scheme for ODE. We present, that the Kaczmarz method is the limit case of the splitting scheme for unitary batch SGD linear least squares approach. We support our findings with empirical tests.
 \end{abstract}
-
-\tableofcontents
-
-%================================================
-% Introduction
-%================================================
 
 \section{Introduction}
 A lot of practical problems arising in machine learning require minimization of a finite sample average which can be written in the form
@@ -92,16 +119,16 @@ We want to establish the connection between splitting scheme for ODE and stochas
 \subsection{Splitting schemes for ODEs}
 The best example to start from is simple ODE with right-hand-side, consisting of two summands:
 \begin{equation}
-    \dfrac{d \theta}{d t} = - \frac{1}{2} \left( g_1(\theta) + g_2(\theta)\right)
+    \frac{d \theta}{d t} = - \frac{1}{2} \left( g_1(\theta) + g_2(\theta)\right)
     \label{strang:gradientflow}
 \end{equation}
 Suppose, we want to find the solution $\theta(h)$ of \eqref{strang:gradientflow} via integrating it on the small timestep $h$. The first order splitting scheme defined by solving first:
 $$
-\dfrac{d \theta}{d t} = - \frac{1}{2} g_1(\theta)
+\frac{d \theta}{d t} = - \frac{1}{2} g_1(\theta)
 $$
 with exact solution $\theta_1(h)$ at the moment $h$ , followed by
 $$
-\dfrac{d \theta}{d t} = - \frac{1}{2} g_2(\theta)
+\frac{d \theta}{d t} = - \frac{1}{2} g_2(\theta), \quad \theta(0) = \theta_1(h)
 $$
 with exact solution $\theta_2(h)$ at the moment $h$. Thus, the first order approximation could be written as a combinations of both solutions:
 $$
@@ -114,14 +141,14 @@ $$
 Order of scheme defines the degree of polynomial of $h$, up to which the true solution and approximation are coincide. The local error of both schemes could be obtained by Baker - Campbell - Hausdorff formula (\cite{baker1901further}, \cite{campbell1896law}, \cite{hausdorff1906symbolische})
 \begin{equation}
     \label{strang:lie_error}
-    \theta^I(h) - \theta(h) = \dfrac{h^2}{2} \left[g_{1}, g_{2}\right] \theta_0 + o(h^3),
+    \theta^I(h) - \theta(h) = \frac{h^2}{2} \left[g_{1}, g_{2}\right] \theta_0 + \mathcal{O}(h^3),
 \end{equation}
 \begin{equation}
     \label{strang:marchuk_error}
-    \theta^{II}(h) - \theta(h) = h^{3} \left(\frac{1}{12}[g_2,[g_2, g_1]]-\frac{1}{24}[g_1,[g_1, g_2]]\right)\theta_0+O\left(h^{4}\right)
+    \theta^{II}(h) - \theta(h) = h^{3} \left(\frac{1}{12}[g_2,[g_2, g_1]]-\frac{1}{24}[g_1,[g_1, g_2]]\right)\theta_0+\mathcal{O}\left(h^{4}\right)
 \end{equation}
 
-where $\left[ g_1, g_2\right] = \dfrac{d g_1}{d \theta} g_2 - \dfrac{d g_2}{d \theta} g_1 $ stands for commutator of the vector fields $g_1$ and $g_2$. The $\theta_0 = \theta(0)$ for initial condition of original ODE.
+where $\left[ g_1, g_2\right] = \frac{d g_1}{d \theta} g_2 - \frac{d g_2}{d \theta} g_1 $ stands for commutator of the vector fields $g_1$ and $g_2$. The $\theta_0 = \theta(0)$ for initial condition of original ODE.
 
 Note, that the basic idea of splitting could be also applied, when the number of terms in the right-hand side of ODE is greater, than two. In this case splitting scheme will take the following form:
 \begin{equation}\label{strang:marchuk}
@@ -134,21 +161,21 @@ Note, that the basic idea of splitting could be also applied, when the number of
 \subsection{SGD as approximation for the Gradient Flow equation}
 Now we consider classical SGD method as a splitting scheme for the full gradient descent (\cite{cauchy1847methode}). Suppose, we have the simplest ($m=2$) finite sum minimization problem:
 $$
-\min_{\theta \in \sR^n} \dfrac{1}{m}\sum\limits_{i=1}^m f_i(\theta) = \min_{\theta \in \sR^n} \frac{1}{2} \left( f_1(\theta) + f_2(\theta)\right)
+\min_{\theta \in \mathbb{R}^n} \frac{1}{m}\sum\limits_{i=1}^m f_i(\theta) = \min_{\theta \in \mathbb{R}^n} \frac{1}{2} \left( f_1(\theta) + f_2(\theta)\right)
 $$
 Let us denote by $g_i^k = \nabla f_i(\theta_k)$, than, the vanilla gradient descent will be written as
 $$
-\theta_{k+1} = \theta_k - h\cdot\frac{1}{2} \left( g^k_1(\theta) + g^k_2(\theta)\right),
+\theta_{k+1} = \theta_k - h\cdot\frac{1}{2} \left( g^k_1 + g^k_2\right),
 $$
 while SGD version will take steps iteratively over minibatch gradient directions:
 \begin{align*}\label{strang:sgd2}
-\theta_{k+1} &= \theta_k - h\cdot g^k_1(\theta) \\
-\theta_{k+2} &= \theta_{k+1} - h\cdot  g^{k+1}_2(\theta)
+\theta_{k+1} &= \theta_k - h\cdot g^k_1 \\
+\theta_{k+2} &= \theta_{k+1} - h\cdot  g^{k+1}_2
 \end{align*}
 These two iterations forms an epoch in SGD approach. Each of the substeps can be considered as a forward Euler method for the discretization of the ODE for a timestep $h$
 \begin{align*}
-    \frac{d \theta^I}{d t} = -g_1(\theta), \quad \theta^I(0) = \theta_{k},\\
-    \frac{d \theta^{II}}{d t} = -g_2(\theta), \quad \theta^{II}(0) = \theta^{I}(h),
+    \frac{d \theta^I}{d t} = -g_1, \quad \theta^I(0) = \theta_{k},\\
+    \frac{d \theta^{II}}{d t} = -g_2, \quad \theta^{II}(0) = \theta^{I}(h),
 \end{align*}
 therefore the final result for a sufficiently small $h$ approximates the gradient flow for at time $t + h$. The vanilla gradient descent, however, is only approximating the gradient flow at time $t + h/2$. For larger number of minibatches, rather then the GD flow. One can notice, that in SGD we use a very simple time integration inside the substep. In some cases, we can integrate the subproblem exactly, without using forward Euler scheme. Generalized linear models are among such problems, but we will first study the linear least squares case in more details, since in this case we can obtain non-trivial error bounds.
 
@@ -157,15 +184,15 @@ therefore the final result for a sufficiently small $h$ approximates the gradien
 It is interesting to look how the pure splitting scheme corresponds to the SGD approach. For this purpose we consider illustrative example of Gradient Flow equation \ref{strang:simple_GF}, where the right-hand side of ODE is just the sum of operators acting on $\theta$, which allows us to apply splitting scheme approximation directly.
 \begin{equation}
 \label{strang:simple_GF}
-\dfrac{d \theta}{d t} = -\dfrac{1}{2} \sum\limits_{i=1}^2 \nabla f_i (\theta) = - \dfrac{1}{2} \nabla f_1 (\theta) -\dfrac{1}{2}  \nabla f_2 (\theta)
+\frac{d \theta}{d t} = -\frac{1}{2} \sum\limits_{i=1}^2 \nabla f_i (\theta) = - \frac{1}{2} \nabla f_1 (\theta) -\frac{1}{2}  \nabla f_2 (\theta)
 \end{equation}
 
 In order to establish the connection between splitting scheme and SGD we use the Euler discretization below:
 
 \begin{align*}
 % \label{strang:simple_GF_splitting}
-&\text{First splitting step: } &\dfrac{d \theta}{d t} = -\frac{1}{2}\nabla f_1(\theta)  &\to\text{ Euler discretization}\to &\tilde{\theta}_{I} = \theta_0 - \frac{h}{2}\nabla f_1 (\theta_0) \\
-&\text{Second splitting step: } &\dfrac{d \theta}{d t} = -\frac{1}{2}\nabla f_2(\theta)  &\to\text{ Euler discretization}\to &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
+&\text{First splitting step: } &\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_1(\theta)  &\to\text{ Euler discretization}\to &\tilde{\theta}_{I} = \theta_0 - \frac{h}{2}\nabla f_1 (\theta_0) \\
+&\text{Second splitting step: } &\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_2(\theta)  &\to\text{ Euler discretization}\to &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
 \end{align*}
 \begin{align*}
 % \label{strang:simple_GF_splitting}
@@ -225,7 +252,7 @@ $$
 	\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
 	= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* +  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| = \Pi_2 \Pi_1
 	\end{align*}
-	Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \dfrac{A + A^\top}{2}\right)$ - the logarithmic norm.
+	Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
 \end{proof}
 
 \begin{figure}[h!]
@@ -265,23 +292,23 @@ The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validi
 \subsubsection{Problem}
 Let $f_i(\theta) = \Vert x_i^{\top} \theta - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
 \begin{equation}\label{strang:LLS}
-   f(\theta) = \dfrac{1}{n}\Vert X \theta - y \Vert_2^2  = \dfrac{1}{n}\sum\limits_{i=1}^s\Vert X_i \theta - y_i \Vert_2^2\to \min_{\theta \in \mathbb{R}^p},
+   f(\theta) = \frac{1}{n}\Vert X \theta - y \Vert_2^2  = \frac{1}{n}\sum\limits_{i=1}^s\Vert X_i \theta - y_i \Vert_2^2\to \min_{\theta \in \mathbb{R}^p},
 \end{equation}
 where $X$ in an $n \times p$ matrix, and $y$ is a vector of length $p$ and the second part of the equation stands for $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, y_i \in \mathbb{R}^{b}$
 
 \begin{equation}\label{strang:LLS_grad}
-\nabla_\theta f(\theta) = \nabla f(\theta) = \dfrac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
+\nabla_\theta f(\theta) = \nabla f(\theta) = \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
 \end{equation}
 
 The gradient flow equation will be written as follows:
 \begin{equation}\label{strang:LLS_GF}
-\dfrac{d \theta}{d t} = - \dfrac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
+\frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
 \end{equation}
 
 \subsubsection{Exact solution of the local problem}
 On each splitting approximation step we need to solve the local problem:
 \begin{equation}\label{strang:LLS_local_problem}
-\dfrac{d \theta}{d t} = - \dfrac{1}{n} X_i^\top( X_i \theta - y_i)
+\frac{d \theta}{d t} = - \frac{1}{n} X_i^\top( X_i \theta - y_i)
 \end{equation}
 \begin{theorem}\label{strang:LLS_local_solution} For any matrix $X_i \in \mathbb{R}^{b \times p}$, any vector of right-hand side $y_i \in \mathbb{R}^{b}$ and initial vector of parameters $\theta_0$, there is a solution of the ODE in \ref{strang:LLS_local_problem}, given by formula:
 $$
@@ -293,31 +320,30 @@ where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ st
 \begin{proof}
 Given $X_i^\top = Q_i R_i$, we have $(I - Q_iQ_i^\top)X_i^\top = 0$. Note, that $Q_i$ is left unitary matrix, i.e. $Q_i^\top Q_i = I$. 
 \begin{align}
-\nonumber \dfrac{d \theta}{d t} &= - \dfrac{1}{n} X_i^\top( X_i \theta - y_i) \\
-\nonumber (I - Q_iQ_i^\top)\dfrac{d \theta}{d t} &= 0 \\
-\nonumber \dfrac{d \theta}{d t} &= Q_i\dfrac{d (Q_i^\top\theta)}{d t} \quad Q_i^\top \theta = \eta_i\\ 
-\nonumber \dfrac{d \theta}{d t} &= Q_i\dfrac{d \eta_i}{d t} \quad \text{integrate from $0$ to $h$}\\ 
+\nonumber \frac{d \theta}{d t} &= - \frac{1}{n} X_i^\top( X_i \theta - y_i) \\
+\nonumber (I - Q_iQ_i^\top)\frac{d \theta}{d t} &= 0 \\
+\nonumber \frac{d \theta}{d t} &= Q_i\frac{d (Q_i^\top\theta)}{d t} \quad Q_i^\top \theta = \eta_i\\ 
+\nonumber \frac{d \theta}{d t} &= Q_i\frac{d \eta_i}{d t} \quad \text{integrate from $0$ to $h$}\\ 
 \label{strang:lls_theorem_theta_from_eta}\theta(h) &= Q_i \left(\eta_i(h) - \eta_i(0) \right) + \theta_0
 \end{align}
 
 On the other hand:
 \begin{align}\nonumber
-\dfrac{d \eta_i}{d t} &= Q_i^\top\dfrac{d \theta}{d t} =  - \dfrac{1}{n} Q_i^\top  X_i^\top( X_i \theta - y_i) = - \dfrac{1}{n} Q_i^\top  Q_i R_i( R_i^\top Q_i^\top \theta - y_i) =\\ 
-&= - \dfrac{1}{n} \left( R_iR_i^\top \eta_i - R_i y_i\right) \label{strang:lls_theorem_eta_from_theta}
+\frac{d \eta_i}{d t} &= Q_i^\top\frac{d \theta}{d t} =  - \frac{1}{n} Q_i^\top  X_i^\top( X_i \theta - y_i) = - \frac{1}{n} Q_i^\top  Q_i R_i( R_i^\top Q_i^\top \theta - y_i) =\\ 
+&= - \frac{1}{n} \left( R_iR_i^\top \eta_i - R_i y_i\right) \label{strang:lls_theorem_eta_from_theta}
 \end{align}
 
-Consider the moment of time $t = \infty$. $\dfrac{d \eta}{d t} = 0$, since $\exists \theta^*, Q_i^\top \theta^* = \eta_i^*$. Also consider \ref{strang:lls_theorem_eta_from_theta}:
-\todo[inline]{Need to clarify this assumption}
+Consider the moment of time $t = \infty$. $\frac{d \eta}{d t} = 0$, since $\exists \theta^*, Q_i^\top \theta^* = \eta_i^*$. Also consider \ref{strang:lls_theorem_eta_from_theta}:
 
 \begin{equation}\label{strang:lls_theorem_eta_star}
-\dfrac{d \eta_i}{d t} = 0 = - \dfrac{1}{n} \left( R_iR_i^\top \eta_i^* - R_i y_i\right) \quad \rightarrow \quad R_i y_i = R_iR_i^\top \eta_i^*
+\frac{d \eta_i}{d t} = 0 = - \frac{1}{n} \left( R_iR_i^\top \eta_i^* - R_i y_i\right) \quad \rightarrow \quad R_i y_i = R_iR_i^\top \eta_i^*
 \end{equation}
 
 Now we look at the \ref{strang:lls_theorem_eta_from_theta} with the replacement, given in \ref{strang:lls_theorem_eta_star}:
 
 \begin{align*}
-\dfrac{d \eta_i}{d t} &= - \dfrac{1}{n} \left( R_iR_i^\top \eta_i- R_iR_i^\top \eta_i^*\right) \\
-\dfrac{d \eta_i}{d t} &= - \dfrac{1}{n} R_iR_i^\top \left( \eta_i- \eta_i^*\right) \qquad \text{integrate from $0$ to $h$} \\
+\frac{d \eta_i}{d t} &= - \frac{1}{n} \left( R_iR_i^\top \eta_i- R_iR_i^\top \eta_i^*\right) \\
+\frac{d \eta_i}{d t} &= - \frac{1}{n} R_iR_i^\top \left( \eta_i- \eta_i^*\right) \qquad \text{integrate from $0$ to $h$} \\
 \eta_i(h) - \eta_i^* &= e^{- \frac{1}{n} R_iR_i^\top h} (\eta_i(0) - \eta_i^*) \qquad \eta_i^* = R_i^{-\top}y_i, \eta_i(0) = Q_i^\top \theta_0 \\ 
 \eta_i(h) &= e^{- \frac{1}{n} R_iR_i^\top h} (Q_i^\top \theta_0 - R_i^{-\top}y_i) + R_i^{-\top}y_i 
 \end{align*}
@@ -328,44 +354,49 @@ $$
 $$
 
 \end{proof}
-In case of the linear right-hand side of an ODE it is easy to solve it analytically. Now let see how the splitting approximation itself depends on the step size $h$.
-$$\theta^{GD} (h) = e^{-Ah} \theta, $$
-and splitting gives
-$$\theta^{SGD}(h) = e^{-A_1 h} e^{-A_2 h} \theta.$$
-The error is bounded as
-$$
- \Vert \theta^{GD} (h) - \theta^{SGD}(h) \Vert \leq  \Vert E_1(h) \Vert \Vert \theta \Vert,
-$$
-where
-\begin{equation}\label{strang:error}
-E_1(t) = e^{A t} - e^{A_1 t} e^{A_2 t}.
-\end{equation}
-We need to bound the norm of the matrix $E_1(t)$ for all $h$, not only for small ones, i.e. we need global estimates. Such kind of estimates were obtained in \cite{sheng1994global} and have the form
-\begin{equation}\label{strang:sheng}
-    \Vert E(t) \Vert \leq \frac{t^2}{2} \Vert [ A_1, A_2] \Vert \max \{ e^{t \mu(A_1 + A_2}), e^{t(\mu(A_1) + \mu(A_2))}\},
-\end{equation}
-where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in our case all matrices are symmetric, thus these are largest eigenvalues of the matrix. The estimate \eqref{strang:sheng} and its generalization to a larger number of summands is not very useful for us, since we will have matrices $X_i$ that have fewer rows, than column, i.e. matrices $A_i$ will have zero eigenvalues, thus the the maximum term will be equal to $1$, and the upper bound will grow quadratically with $h$. In reality, the behaviour is very different, see Figure~\ref{strang:modelfig}. In this example, we took $N=p=2$, batch size $1$. It can be seen, that the true error reaches a plateu, whereas the upper bound is growing quadratically with $t$.
+% In case of the linear right-hand side of an ODE it is easy to solve it analytically. Now let see how the splitting approximation itself depends on the step size $h$.
+% $$\theta^{GD} (h) = e^{-Ah} \theta, $$
+% and splitting gives
+% $$\theta^{SGD}(h) = e^{-A_1 h} e^{-A_2 h} \theta.$$
+% The error is bounded as
+% $$
+%  \Vert \theta^{GD} (h) - \theta^{SGD}(h) \Vert \leq  \Vert E_1(h) \Vert \Vert \theta \Vert,
+% $$
+% where
+% \begin{equation}\label{strang:error}
+% E_1(t) = e^{A t} - e^{A_1 t} e^{A_2 t}.
+% \end{equation}
+% We need to bound the norm of the matrix $E_1(t)$ for all $h$, not only for small ones, i.e. we need global estimates. Such kind of estimates were obtained in \cite{sheng1994global} and have the form
+% \begin{equation}\label{strang:sheng}
+%     \Vert E(t) \Vert \leq \frac{t^2}{2} \Vert [ A_1, A_2] \Vert \max \{ e^{t \mu(A_1 + A_2}), e^{t(\mu(A_1) + \mu(A_2))}\},
+% \end{equation}
+% where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in our case all matrices are symmetric, thus these are largest eigenvalues of the matrix. The estimate \eqref{strang:sheng} and its generalization to a larger number of summands is not very useful for us, since we will have matrices $X_i$ that have fewer rows, than column, i.e. matrices $A_i$ will have zero eigenvalues, thus the the maximum term will be equal to $1$, and the upper bound will grow quadratically with $h$. In reality, the behaviour is very different, see Figure~\ref{strang:modelfig}. In this example, we took $N=p=2$, batch size $1$. It can be seen, that the true error reaches a plateu, whereas the upper bound is growing quadratically with $t$.
 
-We will now prove a better upper bound, that takes into account  possible zero eigenvalues of the matrices $A_1$ and $A_2$.
+% We will now prove a better upper bound, that takes into account  possible zero eigenvalues of the matrices $A_1$ and $A_2$.
 
 
 \subsubsection{Kaczmarz as the limit case of splitting}
+Kaczmarz method \cite{kaczmarz1937method}, \cite{strohmer2009randomized} is a well-known iterative algorithm for solving linear systems
+It is interesting to mention, that splitting approach immediately leads to the Kaczmarz method for solving linear system in the same setting with unit batch size.
+
+
+
 
 \subsection{Binary logistic regression}
 \subsubsection{Problem}
 In this classification task then problem \eqref{strang:finitesum} takes the following form:
 \begin{equation}\label{strang:LogReg}
-   f(\theta) = -\dfrac{1}{n} \left(y_i \ln h_{\theta}(x_i)  + (1-y_i) \ln (1-h_{\theta}(x_i))\right) \to \min_{\theta \in \mathbb{R}^p},
+   f(\theta) = -\frac{1}{n} \left(y_i \ln h_{\theta}(x_i)  + (1-y_i) \ln (1-h_{\theta}(x_i))\right) \to \min_{\theta \in \mathbb{R}^p},
 \end{equation}
-where $h_\theta(x_i) = \dfrac{1}{1 + e^{-\theta^\top x_i}}$ is the hypothesis function with given parameter $\theta$ from the object $x_i$, $ y_i \in \{0,1\}$ stands for the label of the object class.
+where $h_\theta(x_i) = \frac{1}{1 + e^{-\theta^\top x_i}}$ is the hypothesis function with given parameter $\theta$ from the object $x_i$, $ y_i \in \{0,1\}$ stands for the label of the object class.
 
 \begin{equation}\label{strang:LogReg_grad}
-\nabla_\theta f(\theta) = \nabla f(\theta) = \dfrac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
+\nabla_\theta f(\theta) = \nabla f(\theta) = \frac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
 \end{equation}
 
 The gradient flow equation will be written as follows:
 \begin{equation}\label{strang:LogReg_GF}
-\dfrac{d \theta}{d t} = - \dfrac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
+\frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
 \end{equation}
 
 
@@ -396,14 +427,15 @@ Solution dynamics of the linear least squares problem was also studied in \cite{
 
 General overview of interplay between continuous-time and discrete-time point of views on dynamical systems and iterative optimization methods is covered in \cite{helmke2012optimization}, \cite{evtushenko1994stable}
 
+\bibliography{biblio}
+\bibliographystyle{icml2020}
 
 
-
-
-% https://na.math.kit.edu/marlis/download/talks/05helsinki_ostermann.pdf
-% https://ocw.mit.edu/courses/mathematics/18-336-numerical-methods-for-partial-differential-equations-spring-2009/lecture-notes/MIT18_336S09_lec20.pdf
-% https://hal.archives-ouvertes.fr/hal-01183745/document
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DELETE THIS PART. DO NOT PLACE CONTENT AFTER THE REFERENCES!
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %================================================
 % Appendix
@@ -448,10 +480,5 @@ General overview of interplay between continuous-time and discrete-time point of
 
 \caption{MNIST 0,1. Binary logistic regression. Averaging on 30 runs}
 \end{figure}
-
-\newpage
-
-\bibliography{biblio}
-\bibliographystyle{iclr2019_conference}
 
 \end{document}
