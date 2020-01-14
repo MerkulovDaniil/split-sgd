@@ -349,20 +349,22 @@ which is exact formula for Kaczmarz method for solving linear system. This resul
 
 Suppose, that we have only two batches, and the problem \eqref{strang:LLS} is consistent, i.e. there exists an exact solution $\theta_*$ such as $X \theta_* = y$. The GD flow has the form
 \begin{equation}\label{strang:model1}
-    \frac{d \theta}{d t} = -X^{\top} (X \theta - y) = -X^{\top} X(\theta - \theta_*) = -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\theta - \theta_*),
+\begin{split}
+    \frac{d \theta}{d t} &= -X^{\top} (X \theta - y) = -X^{\top} X(\theta - \theta_*) =\\ &= -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\theta - \theta_*),
+\end{split}
 \end{equation}
 i.e. the splitting scheme corresponds to a linear operator splitting
 
-$$
-A = A_1 + A_2, \quad A = -X^{\top} X, \quad A_i = -X^{\top}_i X_i, \quad i = 1, 2.
-$$
+\begin{equation*}
+A = A_1 + A_2, \; A = -X^{\top} X, \; A_i = -X^{\top}_i X_i, \; i = 1, 2.
+\end{equation*}
 
 Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\theta_* = 0$,
 
 Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
-$$
+\begin{equation*}
 A_i = Q_i B_i Q^*_i,
-$$
+\end{equation*}
 where $Q_i$ is an $N \times r_i$ matrix with orthonormal columns.  The following Lemma gives the representation of the matrix exponents of such matrices.
 \begin{lemma}\label{strang:lemexp}
 Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
@@ -371,9 +373,11 @@ Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns,
 \end{equation}
 \end{lemma}
 To prove \eqref{strang:lrexp} we note that
-$$e^{t A} = \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} =
-I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = (I - QQ^*) + Q e^{t B} Q^*.
-$$
+\begin{equation*}
+\begin{split}
+e^{t A} &= \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} = \\ &= I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = \\ &= (I - QQ^*) + Q e^{t B} Q^*.
+\end{split}
+\end{equation*}
 
 \begin{lemma}
 	\label{strang:lemupper_2}
@@ -389,20 +393,32 @@ $$
 	e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
 	$$
 	\begin{align*}
-	\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
-	= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* +  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| = \Pi_2 \Pi_1
+	&\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \\ 
+	&= \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
+	&= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* + \\
+	&+  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| =\\&= \Pi_2 \Pi_1
 	\end{align*}
 	Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
 \end{proof}
 
-\begin{figure}[h!]
-	\centering
-	\includegraphics[width=0.6\textwidth]{upper_bound_2.pdf}
-	\caption{Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}
-	\label{strang:fig:upper_bound_2}
+\begin{figure}[ht]
+\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{upper_bound_2.pdf}}
+\caption{Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}
+\label{strang:fig:upper_bound_2}
+\end{center}
+\vskip -0.2in
 \end{figure}
 
-The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One can easily see significant difference between existing global upper bounds for that case (\cite{sheng1994global}) and derived upper bound.
+% \begin{figure}[h!]
+% 	\centering
+% 	\includegraphics[width=0.6\textwidth]{upper_bound_2.pdf}
+% 	\caption{Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}
+% 	\label{strang:fig:upper_bound_2}
+% \end{figure}
+
+The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One can easily see significant difference between existing global upper bounds for that case \cite{sheng1994global} and derived upper bound.
 
 \begin{theorem}\label{strang:theorem_uppbound}
 	Let $A_1, A_2, \ldots, A_b \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_i} \leq p, \;\forall i = 1, \ldots, b$. While the sum of those matrices has full rank, i.e. $A = \sum\limits_{i=1}^b A_i, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
@@ -413,16 +429,17 @@ The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One
 	where $\Pi_i = I - Q_iQ_i^*$ and $A_i = Q_iB_iQ_i^*$ and $Q_i$ is a matrix with orthonormal columns. 
 \end{theorem}
 
-\begin{figure}[h!]
-	\centering
-	\includegraphics[width=0.6\textwidth]{upper_bound_many.pdf}
-	\caption{Global upper bound on the splitting scheme in case of $40$ summands in the right-hand side. }
-	\label{strang:fig:upper_bound_many}
-\end{figure}
-
 The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validity of the presented upper bound.
 
-
+\begin{figure}[ht]
+\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{upper_bound_many.pdf}}
+\caption{Global upper bound on the splitting scheme in case of $40$ summands in the right-hand side.}
+\label{strang:fig:upper_bound_many}
+\end{center}
+\vskip -0.2in
+\end{figure}
 
 \subsection{Binary logistic regression}
 \subsubsection{Problem}
