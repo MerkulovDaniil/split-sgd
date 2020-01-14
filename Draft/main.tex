@@ -88,10 +88,10 @@ A lot of practical problems arising in machine learning require minimization of 
 \begin{equation}\label{strang:finitesum}
     f(\theta) = \frac{1}{n} \sum_{i=1}^n f_i(\theta) \rightarrow \min_{\theta \in \mathbb{R}^p},
 \end{equation}
-where the sum goes over the \emph{minibatches} of the original dataset. Vanilla stochastic gradient descent (SGD) method (\cite{robbins1951stochastic})has consists in sequential step in the direction of the gradient of $f_i(\theta)$, where $i$ is to be chosen randomly from $1$ to $n$ without replacement.
-$$
+where the sum goes over the \emph{minibatches} of the original dataset. Vanilla stochastic gradient descent (SGD) method \cite{robbins1951stochastic} consists sequential steps in the direction of the gradient of $f_i(\theta)$, where $i$ is to be chosen randomly from $1$ to $n$ without replacement.
+\begin{equation}
 \theta_{k+1} = \theta_{k} - h_{k} \nabla f_i.
-$$
+\end{equation}
 Gradient descent method can be considered as an Euler discretization of the ordinary differential equation (ODE) of the form of the gradient flow
 \begin{equation}\label{strang:euler}
     \frac{d \theta}{d t} = -\nabla f(\theta).
@@ -124,7 +124,7 @@ The best example to start from is simple ODE with right-hand-side, consisting of
 \end{equation}
 Suppose, we want to find the solution $\theta(h)$ of \eqref{strang:gradientflow} via integrating it on the small timestep $h$. The first order splitting scheme defined by solving first:
 $$
-\frac{d \theta}{d t} = - \frac{1}{2} g_1(\theta)
+\frac{d \theta}{d t} = - \frac{1}{2} g_1(\theta), \quad \theta(0) = \theta_0
 $$
 with exact solution $\theta_1(h)$ at the moment $h$ , followed by
 $$
@@ -138,14 +138,16 @@ while the second order scheme takes 3 substeps:
 $$
 \theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2(h) \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
 $$
-Order of scheme defines the degree of polynomial of $h$, up to which the true solution and approximation are coincide. The local error of both schemes could be obtained by Baker - Campbell - Hausdorff formula (\cite{baker1901further}, \cite{campbell1896law}, \cite{hausdorff1906symbolische})
+Order of scheme defines the degree of polynomial of $h$, up to which the true solution and approximation are coincide. The local error of both schemes is given by Baker - Campbell - Hausdorff formula (\cite{baker1901further}, \cite{campbell1896law}, \cite{hausdorff1906symbolische}) (see \cite{macnamara2016operator} for the details)
 \begin{equation}
     \label{strang:lie_error}
-    \theta^I(h) - \theta(h) = \frac{h^2}{2} \left[g_{1}, g_{2}\right] \theta_0 + \mathcal{O}(h^3),
+    \theta^I(h) - \theta(h) = \frac{h^2}{2} \left[g_{1}, g_{2}\right]  + \mathcal{O}(h^3),
 \end{equation}
 \begin{equation}
     \label{strang:marchuk_error}
-    \theta^{II}(h) - \theta(h) = h^{3} \left(\frac{1}{12}[g_2,[g_2, g_1]]-\frac{1}{24}[g_1,[g_1, g_2]]\right)\theta_0+\mathcal{O}\left(h^{4}\right)
+    \begin{split}
+    &\theta^{II}(h) - \theta(h) =\\&= \frac{h^{3}}{24} \left([[g_1, g_2], g_1]+2[[g_1, g_2], g_2]\right)+\mathcal{O}\left(h^{4}\right)
+    \end{split}
 \end{equation}
 
 where $\left[ g_1, g_2\right] = \frac{d g_1}{d \theta} g_2 - \frac{d g_2}{d \theta} g_1 $ stands for commutator of the vector fields $g_1$ and $g_2$. The $\theta_0 = \theta(0)$ for initial condition of original ODE.
@@ -155,7 +157,9 @@ Note, that the basic idea of splitting could be also applied, when the number of
 	\theta^I(h) = \theta_m(h) \circ \theta_{m-1} \circ \ldots \circ \theta_2(h) \circ \theta_1(h) \circ \theta_0
 \end{equation}
 \begin{equation}\label{strang:strang}
-	\theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2\left(\frac{h}{2}\right) \circ\ldots \theta_m(h) \ldots \theta_2\left(\frac{h}{2}\right) \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
+\begin{split}
+	\theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2\left(\frac{h}{2}\right) \circ\ldots \theta_m(h) \circ \\ \ldots \theta_2\left(\frac{h}{2}\right)  \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
+\end{split}
 \end{equation}
 
 \subsection{SGD as approximation for the Gradient Flow equation}
@@ -189,11 +193,20 @@ It is interesting to look how the pure splitting scheme corresponds to the SGD a
 
 In order to establish the connection between splitting scheme and SGD we use the Euler discretization below:
 
+% \begin{align*}
+% % \label{strang:simple_GF_splitting}
+% &\text{First splitting step: } &\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_1(\theta)  &\to\text{ Euler discretization}\to &\tilde{\theta}_{I} = \theta_0 - \frac{h}{2}\nabla f_1 (\theta_0) \\
+% &\text{Second splitting step: } &\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_2(\theta)  &\to\text{ Euler discretization}\to &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
+% \end{align*}
+
 \begin{align*}
 % \label{strang:simple_GF_splitting}
-&\text{First splitting step: } &\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_1(\theta)  &\to\text{ Euler discretization}\to &\tilde{\theta}_{I} = \theta_0 - \frac{h}{2}\nabla f_1 (\theta_0) \\
-&\text{Second splitting step: } &\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_2(\theta)  &\to\text{ Euler discretization}\to &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
+&\qquad\text{Splitting step} &\text{Euler discretization} \\
+&\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_1(\theta) &\tilde{\theta}_{I} = \theta_0 - \frac{h}{2}\nabla f_1 (\theta_0) \\
+&\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_2(\theta) &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
 \end{align*}
+
+
 \begin{align*}
 % \label{strang:simple_GF_splitting}
 &\qquad\text{SGD epoch} &\text{First order splitting} \\
@@ -203,11 +216,121 @@ In order to establish the connection between splitting scheme and SGD we use the
 
 Thus, we can conclude, that \textit{one epoch of SGD is just the splitting scheme for the discretized Gradient Flow ODE with $2 \cdot h$ step size ($m \cdot h$ in case of $m$ batches)}
 
-This idea gives additional intuition on the method. Both approaches are solving local problems through the Euler discretization. Given an information about the Euler scheme limitation, why not solve these local problems more accurate?
+This idea gives additional intuition on the method. Both approaches are solving local problems through the Euler discretization. Given an information about the Euler scheme limitation, why not solve these local problems more accurate? While Euler's scheme is first order accurate, there is no point in using higher order splitting scheme's in such setting. Therefore, total error is defined by the accuracy of splitting and local problem integration. We should improve them both to achieve gain.
 
-\subsection{Upper bound on the global splitting error}
+%================================================
+% Applications
+%================================================
 
-Suppose, that we have only two batches, and the problem \eqref{strang:linearlst} is consistent, i.e. there exists an exact solution $\theta_*$ such as $X \theta_* = y$. The GD flow has the form
+\section{Applications}
+\subsection{Linear least squares}
+\subsubsection{Problem}
+Let $f_i(\theta) = \Vert x_i^{\top} \theta - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
+\begin{equation}\label{strang:LLS}
+   f(\theta) = \frac{1}{n}\Vert X \theta - y \Vert_2^2  = \frac{1}{n}\sum\limits_{i=1}^s\Vert X_i \theta - y_i \Vert_2^2\to \min_{\theta \in \mathbb{R}^p},
+\end{equation}
+where $X \in \mathbb{R}^{n \times p}$ and $y \in \mathbb{R}^p$ and the second part of the equation stands for $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, y_i \in \mathbb{R}^{b}$
+
+\begin{equation}\label{strang:LLS_grad}
+\nabla_\theta f(\theta) = \nabla f(\theta) = \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
+\end{equation}
+
+The gradient flow equation will be written as follows:
+\begin{equation}\label{strang:LLS_GF}
+\frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
+\end{equation}
+
+\subsubsection{Exact solution of the local problem}
+On each splitting approximation step we need to solve the local problem:
+\begin{equation}\label{strang:LLS_local_problem}
+\frac{d \theta}{d t} = - \frac{1}{n} X_i^\top( X_i \theta - y_i)
+\end{equation}
+\begin{theorem}\label{strang:LLS_local_solution} For any matrix $X_i \in \mathbb{R}^{b \times p}$, any vector of right-hand side $y_i \in \mathbb{R}^{b}$ and initial vector of parameters $\theta_0$, there is a solution of the ODE in \eqref{strang:LLS_local_problem}, given by formula:
+\begin{equation}\label{strang:LLS_local_solution_formula}
+\begin{split}
+\theta(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \theta_0 - R_i^{-\top}y_i\right) + \\ &+ Q_iR_i^{-\top}y_i + (I - Q_iQ_i^\top)\theta_0,
+\end{split}
+\end{equation}
+where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ stands for the $QR$ decomposition of the matrix $X_i^\top$, $X_i^\top = Q_i R_i$.
+\end{theorem}
+
+\begin{proof}
+Given $X_i^\top = Q_i R_i$, we have $(I - Q_iQ_i^\top)X_i^\top = 0$. Note, that $Q_i$ is left unitary matrix, i.e. $Q_i^\top Q_i = I$. 
+\begin{align}
+\nonumber \frac{d \theta}{d t} &= - \frac{1}{n} X_i^\top( X_i \theta - y_i) \\
+\nonumber (I - Q_iQ_i^\top)\frac{d \theta}{d t} &= 0 \\
+\nonumber \frac{d \theta}{d t} &= Q_i\frac{d (Q_i^\top\theta)}{d t} \quad Q_i^\top \theta = \eta_i\\ 
+\nonumber \frac{d \theta}{d t} &= Q_i\frac{d \eta_i}{d t} \quad \text{integrate from $0$ to $h$}\\ 
+\label{strang:lls_theorem_theta_from_eta}\theta(h) &= Q_i \left(\eta_i(h) - \eta_i(0) \right) + \theta_0
+\end{align}
+
+On the other hand:
+\begin{align}\nonumber
+\frac{d \eta_i}{d t} &= Q_i^\top\frac{d \theta}{d t} =  - \frac{1}{n} Q_i^\top  X_i^\top( X_i \theta - y_i) = \\ 
+\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i( R_i^\top Q_i^\top \theta - y_i) =\\
+&= - \frac{1}{n} \left( R_iR_i^\top \eta_i - R_i y_i\right) \label{strang:lls_theorem_eta_from_theta}
+\end{align}
+
+Consider the moment of time $t = \infty$. $\frac{d \eta}{d t} = 0$, since $\exists \theta^*, Q_i^\top \theta^* = \eta_i^*$. Also consider \eqref{strang:lls_theorem_eta_from_theta}:
+
+\begin{equation}\label{strang:lls_theorem_eta_star}
+\begin{split}
+\frac{d \eta_i}{d t} = 0 &= - \frac{1}{n} \left( R_iR_i^\top \eta_i^* - R_i y_i\right) \\ R_i y_i &= R_iR_i^\top \eta_i^*
+\end{split}
+\end{equation}
+
+Now we look at the \eqref{strang:lls_theorem_eta_from_theta} with the replacement, given in \eqref{strang:lls_theorem_eta_star}:
+
+\begin{align*}
+\frac{d \eta_i}{d t} &= - \frac{1}{n} \left( R_iR_i^\top \eta_i- R_iR_i^\top \eta_i^*\right) \\
+\frac{d \eta_i}{d t} &= - \frac{1}{n} R_iR_i^\top \left( \eta_i- \eta_i^*\right) \qquad \text{integrate from $0$ to $h$} \\
+\eta_i(h) - \eta_i^* &= e^{- \frac{1}{n} R_iR_i^\top h} (\eta_i(0) - \eta_i^*) \\ 
+&\text{while } \eta_i^* = R_i^{-\top}y_i, \eta_i(0) = Q_i^\top \theta_0 \\
+\eta_i(h) &= e^{- \frac{1}{n} R_iR_i^\top h} (Q_i^\top \theta_0 - R_i^{-\top}y_i) + R_i^{-\top}y_i 
+\end{align*}
+
+Using \eqref{strang:lls_theorem_theta_from_eta} we obtain the target formula
+\begin{equation*}
+\begin{split}
+\theta(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \theta_0 - R_i^{-\top}y_i\right) + \\ &+ Q_iR_i^{-\top}y_i + (I - Q_iQ_i^\top)\theta_0,
+\end{split}
+\end{equation*}
+
+\end{proof}
+% In case of the linear right-hand side of an ODE it is easy to solve it analytically. Now let see how the splitting approximation itself depends on the step size $h$.
+% $$\theta^{GD} (h) = e^{-Ah} \theta, $$
+% and splitting gives
+% $$\theta^{SGD}(h) = e^{-A_1 h} e^{-A_2 h} \theta.$$
+% The error is bounded as
+% $$
+%  \Vert \theta^{GD} (h) - \theta^{SGD}(h) \Vert \leq  \Vert E_1(h) \Vert \Vert \theta \Vert,
+% $$
+% where
+% \begin{equation}\label{strang:error}
+% E_1(t) = e^{A t} - e^{A_1 t} e^{A_2 t}.
+% \end{equation}
+% We need to bound the norm of the matrix $E_1(t)$ for all $h$, not only for small ones, i.e. we need global estimates. Such kind of estimates were obtained in \cite{sheng1994global} and have the form
+% \begin{equation}\label{strang:sheng}
+%     \Vert E(t) \Vert \leq \frac{t^2}{2} \Vert [ A_1, A_2] \Vert \max \{ e^{t \mu(A_1 + A_2}), e^{t(\mu(A_1) + \mu(A_2))}\},
+% \end{equation}
+% where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in our case all matrices are symmetric, thus these are largest eigenvalues of the matrix. The estimate \eqref{strang:sheng} and its generalization to a larger number of summands is not very useful for us, since we will have matrices $X_i$ that have fewer rows, than column, i.e. matrices $A_i$ will have zero eigenvalues, thus the the maximum term will be equal to $1$, and the upper bound will grow quadratically with $h$. In reality, the behaviour is very different, see Figure~\ref{strang:modelfig}. In this example, we took $N=p=2$, batch size $1$. It can be seen, that the true error reaches a plateu, whereas the upper bound is growing quadratically with $t$.
+
+% We will now prove a better upper bound, that takes into account  possible zero eigenvalues of the matrices $A_1$ and $A_2$.
+
+
+\subsubsection{Kaczmarz as the limit case of splitting}
+Kaczmarz method \cite{kaczmarz1937method}, \cite{strohmer2009randomized}, \cite{gower2015randomized} is a well-known iterative algorithm for solving linear systems
+It is interesting to mention, that splitting approach immediately leads to the Kaczmarz method for solving linear system in the same setting with unit batch size.
+
+When the batch size is equal to one, we need to do $n$ QR decompositions:
+
+\begin{equation}
+x^\top_i = qr = \frac{x}{\|x\|} \|x\|
+\end{equation}
+
+\subsubsection{Upper bound on the global splitting error}
+
+Suppose, that we have only two batches, and the problem \eqref{strang:LLS} is consistent, i.e. there exists an exact solution $\theta_*$ such as $X \theta_* = y$. The GD flow has the form
 \begin{equation}\label{strang:model1}
     \frac{d \theta}{d t} = -X^{\top} (X \theta - y) = -X^{\top} X(\theta - \theta_*) = -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\theta - \theta_*),
 \end{equation}
@@ -281,104 +404,6 @@ The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One
 \end{figure}
 
 The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validity of the presented upper bound.
-
-
-%================================================
-% Applications
-%================================================
-
-\section{Applications}
-\subsection{Linear least squares}
-\subsubsection{Problem}
-Let $f_i(\theta) = \Vert x_i^{\top} \theta - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
-\begin{equation}\label{strang:LLS}
-   f(\theta) = \frac{1}{n}\Vert X \theta - y \Vert_2^2  = \frac{1}{n}\sum\limits_{i=1}^s\Vert X_i \theta - y_i \Vert_2^2\to \min_{\theta \in \mathbb{R}^p},
-\end{equation}
-where $X$ in an $n \times p$ matrix, and $y$ is a vector of length $p$ and the second part of the equation stands for $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, y_i \in \mathbb{R}^{b}$
-
-\begin{equation}\label{strang:LLS_grad}
-\nabla_\theta f(\theta) = \nabla f(\theta) = \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
-\end{equation}
-
-The gradient flow equation will be written as follows:
-\begin{equation}\label{strang:LLS_GF}
-\frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
-\end{equation}
-
-\subsubsection{Exact solution of the local problem}
-On each splitting approximation step we need to solve the local problem:
-\begin{equation}\label{strang:LLS_local_problem}
-\frac{d \theta}{d t} = - \frac{1}{n} X_i^\top( X_i \theta - y_i)
-\end{equation}
-\begin{theorem}\label{strang:LLS_local_solution} For any matrix $X_i \in \mathbb{R}^{b \times p}$, any vector of right-hand side $y_i \in \mathbb{R}^{b}$ and initial vector of parameters $\theta_0$, there is a solution of the ODE in \ref{strang:LLS_local_problem}, given by formula:
-$$
-\theta(h) = Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \theta_0 - R_i^{-\top}y_i\right) + Q_iR_i^{-\top}y_i + (I - Q_iQ_i^\top)\theta_0,
-$$ 
-where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ stands for the $QR$ decomposition of the matrix $X_i^\top$, $X_i^\top = Q_i R_i$.
-\end{theorem}
-
-\begin{proof}
-Given $X_i^\top = Q_i R_i$, we have $(I - Q_iQ_i^\top)X_i^\top = 0$. Note, that $Q_i$ is left unitary matrix, i.e. $Q_i^\top Q_i = I$. 
-\begin{align}
-\nonumber \frac{d \theta}{d t} &= - \frac{1}{n} X_i^\top( X_i \theta - y_i) \\
-\nonumber (I - Q_iQ_i^\top)\frac{d \theta}{d t} &= 0 \\
-\nonumber \frac{d \theta}{d t} &= Q_i\frac{d (Q_i^\top\theta)}{d t} \quad Q_i^\top \theta = \eta_i\\ 
-\nonumber \frac{d \theta}{d t} &= Q_i\frac{d \eta_i}{d t} \quad \text{integrate from $0$ to $h$}\\ 
-\label{strang:lls_theorem_theta_from_eta}\theta(h) &= Q_i \left(\eta_i(h) - \eta_i(0) \right) + \theta_0
-\end{align}
-
-On the other hand:
-\begin{align}\nonumber
-\frac{d \eta_i}{d t} &= Q_i^\top\frac{d \theta}{d t} =  - \frac{1}{n} Q_i^\top  X_i^\top( X_i \theta - y_i) = - \frac{1}{n} Q_i^\top  Q_i R_i( R_i^\top Q_i^\top \theta - y_i) =\\ 
-&= - \frac{1}{n} \left( R_iR_i^\top \eta_i - R_i y_i\right) \label{strang:lls_theorem_eta_from_theta}
-\end{align}
-
-Consider the moment of time $t = \infty$. $\frac{d \eta}{d t} = 0$, since $\exists \theta^*, Q_i^\top \theta^* = \eta_i^*$. Also consider \ref{strang:lls_theorem_eta_from_theta}:
-
-\begin{equation}\label{strang:lls_theorem_eta_star}
-\frac{d \eta_i}{d t} = 0 = - \frac{1}{n} \left( R_iR_i^\top \eta_i^* - R_i y_i\right) \quad \rightarrow \quad R_i y_i = R_iR_i^\top \eta_i^*
-\end{equation}
-
-Now we look at the \ref{strang:lls_theorem_eta_from_theta} with the replacement, given in \ref{strang:lls_theorem_eta_star}:
-
-\begin{align*}
-\frac{d \eta_i}{d t} &= - \frac{1}{n} \left( R_iR_i^\top \eta_i- R_iR_i^\top \eta_i^*\right) \\
-\frac{d \eta_i}{d t} &= - \frac{1}{n} R_iR_i^\top \left( \eta_i- \eta_i^*\right) \qquad \text{integrate from $0$ to $h$} \\
-\eta_i(h) - \eta_i^* &= e^{- \frac{1}{n} R_iR_i^\top h} (\eta_i(0) - \eta_i^*) \qquad \eta_i^* = R_i^{-\top}y_i, \eta_i(0) = Q_i^\top \theta_0 \\ 
-\eta_i(h) &= e^{- \frac{1}{n} R_iR_i^\top h} (Q_i^\top \theta_0 - R_i^{-\top}y_i) + R_i^{-\top}y_i 
-\end{align*}
-
-Using \ref{strang:lls_theorem_theta_from_eta} we obtain the target formula
-$$
-\theta(h) = Q_i \left(e^{- \frac{1}{n} R_iR_i^\top h} (Q_i^\top \theta_0 - R_i^{-\top}y_i) + R_i^{-\top}y_i - Q_i^\top \theta_0 \right) + \theta_0
-$$
-
-\end{proof}
-% In case of the linear right-hand side of an ODE it is easy to solve it analytically. Now let see how the splitting approximation itself depends on the step size $h$.
-% $$\theta^{GD} (h) = e^{-Ah} \theta, $$
-% and splitting gives
-% $$\theta^{SGD}(h) = e^{-A_1 h} e^{-A_2 h} \theta.$$
-% The error is bounded as
-% $$
-%  \Vert \theta^{GD} (h) - \theta^{SGD}(h) \Vert \leq  \Vert E_1(h) \Vert \Vert \theta \Vert,
-% $$
-% where
-% \begin{equation}\label{strang:error}
-% E_1(t) = e^{A t} - e^{A_1 t} e^{A_2 t}.
-% \end{equation}
-% We need to bound the norm of the matrix $E_1(t)$ for all $h$, not only for small ones, i.e. we need global estimates. Such kind of estimates were obtained in \cite{sheng1994global} and have the form
-% \begin{equation}\label{strang:sheng}
-%     \Vert E(t) \Vert \leq \frac{t^2}{2} \Vert [ A_1, A_2] \Vert \max \{ e^{t \mu(A_1 + A_2}), e^{t(\mu(A_1) + \mu(A_2))}\},
-% \end{equation}
-% where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in our case all matrices are symmetric, thus these are largest eigenvalues of the matrix. The estimate \eqref{strang:sheng} and its generalization to a larger number of summands is not very useful for us, since we will have matrices $X_i$ that have fewer rows, than column, i.e. matrices $A_i$ will have zero eigenvalues, thus the the maximum term will be equal to $1$, and the upper bound will grow quadratically with $h$. In reality, the behaviour is very different, see Figure~\ref{strang:modelfig}. In this example, we took $N=p=2$, batch size $1$. It can be seen, that the true error reaches a plateu, whereas the upper bound is growing quadratically with $t$.
-
-% We will now prove a better upper bound, that takes into account  possible zero eigenvalues of the matrices $A_1$ and $A_2$.
-
-
-\subsubsection{Kaczmarz as the limit case of splitting}
-Kaczmarz method \cite{kaczmarz1937method}, \cite{strohmer2009randomized} is a well-known iterative algorithm for solving linear systems
-It is interesting to mention, that splitting approach immediately leads to the Kaczmarz method for solving linear system in the same setting with unit batch size.
-
 
 
 
