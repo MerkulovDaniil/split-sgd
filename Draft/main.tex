@@ -158,7 +158,7 @@ Note, that the basic idea of splitting could be also applied, when the number of
 \end{equation}
 \begin{equation}\label{strang:strang}
 \begin{split}
-	\theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2\left(\frac{h}{2}\right) \circ\ldots \theta_m(h) \circ \\ \ldots \theta_2\left(\frac{h}{2}\right)  \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
+	\theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2\left(\frac{h}{2}\right) \circ\ldots \theta_m(h) \circ \ldots \\ \ldots \circ \theta_2\left(\frac{h}{2}\right)  \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
 \end{split}
 \end{equation}
 
@@ -322,11 +322,28 @@ Using \eqref{strang:lls_theorem_theta_from_eta} we obtain the target formula
 Kaczmarz method \cite{kaczmarz1937method}, \cite{strohmer2009randomized}, \cite{gower2015randomized} is a well-known iterative algorithm for solving linear systems
 It is interesting to mention, that splitting approach immediately leads to the Kaczmarz method for solving linear system in the same setting with unit batch size.
 
-When the batch size is equal to one, we need to do $n$ QR decompositions:
+When the batch size is equal to one, we need to do $n$ QR decompositions for each transposed batch matrix, which is just column vector $x_i$ in our case:
 
 \begin{equation}
-x^\top_i = qr = \frac{x}{\|x\|} \|x\|
+x_i = q_i r_i = \underset{q_i }{\frac{x_i}{\|x_i\|}} \underset{r_i}{\vphantom{\frac{x_i}{\|x_i\|}} \|x_i\|}
 \end{equation}
+
+Now, we need to use \eqref{strang:LLS_local_solution_formula} to derive analytic local solution in that case:
+
+\begin{equation*}
+\begin{split}
+\theta(h) &= \frac{x_i}{\|x_i\|} e^{-\frac{\|x_i\|^2 h}{n}} \left( \frac{x_i^\top}{\|x_i\|} \theta_0 - \frac{y_i}{\|x_i\|}\right) + \\ &+ \frac{x_i}{\|x_i\|^2}y_i + \left(I - \frac{x_ix_i^\top}{\|x_i\|^2}\right)\theta_0 = \\
+&= \frac{\left(y_i - x_i^\top\theta_0 \right)}{\|x_i\|^2}  \left(1 - e^{-\frac{\|x_i\|^2 h}{n}}\right)x_i + \theta_0
+\end{split}
+\end{equation*}
+
+It can be easily seen, that:
+
+\begin{equation}
+\label{strang:splitting_limit_kaczmarz}
+\lim_{h \to \infty} \theta(h) = \frac{\left(y_i - x_i^\top\theta_0 \right)}{\|x_i\|^2} x_i + \theta_0,
+\end{equation}
+which is exact formula for Kaczmarz method for solving linear system. This result correlates with the statements of \cite{needell2014stochastic}, but provides us with a new sense of similarity between SGD and Kaczmarz method.
 
 \subsubsection{Upper bound on the global splitting error}
 
@@ -393,7 +410,7 @@ The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One
 	\begin{equation}\label{strang:global_error_upper_bound}
 		\lim_{t \to \infty}\| e^{A_bt} \cdot \ldots \cdot e^{A_1t} - e^{At}\| = \left\|\prod\limits_{i=1}^b \Pi_{b-i+1}\right\|,
 	\end{equation}
-	where $\Pi_i = I - Q_iQ_i^*$ and $A_i = Q_iB_iQ_i^*$ and $Q_i$ ia a matrix with orthonormal columns. 
+	where $\Pi_i = I - Q_iQ_i^*$ and $A_i = Q_iB_iQ_i^*$ and $Q_i$ is a matrix with orthonormal columns. 
 \end{theorem}
 
 \begin{figure}[h!]
@@ -452,6 +469,7 @@ Solution dynamics of the linear least squares problem was also studied in \cite{
 
 General overview of interplay between continuous-time and discrete-time point of views on dynamical systems and iterative optimization methods is covered in \cite{helmke2012optimization}, \cite{evtushenko1994stable}
 
+\newpage
 \bibliography{biblio}
 \bibliographystyle{icml2020}
 
