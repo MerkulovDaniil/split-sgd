@@ -15,6 +15,8 @@
 \usepackage{amsmath,amsthm,amssymb}
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
+\usepackage{bm}
+\newcommand{\vect}[1]{\boldsymbol{\mathbf{#1}}}
 
 % Attempt to make hyperref and algorithmic work together better:
 \newcommand{\theHalgorithm}{\arabic{algorithm}}
@@ -86,15 +88,15 @@ We present different view on stochastic optimization, which goes back to the spl
 \section{Introduction}
 A lot of practical problems arising in machine learning require minimization of a finite sample average which can be written in the form
 \begin{equation}\label{strang:finitesum}
-    f(\theta) = \frac{1}{n} \sum_{i=1}^n f_i(\theta) \rightarrow \min_{\theta \in \mathbb{R}^p},
+    f(\vect{\vect{\theta}}) = \frac{1}{n} \sum_{i=1}^n f_i(\vect{\vect{\theta}}) \rightarrow \min_{\vect{\vect{\theta}} \in \mathbb{R}^p},
 \end{equation}
-where the sum goes over the \emph{minibatches} of the original dataset. Vanilla stochastic gradient descent (SGD) method \cite{robbins1951stochastic} consists sequential steps in the direction of the gradient of $f_i(\theta)$, where $i$ is to be chosen randomly from $1$ to $n$ without replacement.
+where the sum goes over the \emph{minibatches} of the original dataset. Vanilla stochastic gradient descent (SGD) method \cite{robbins1951stochastic} consists sequential steps in the direction of the gradient of $f_i(\vect{\theta})$, where $i$ is to be chosen randomly from $1$ to $n$ without replacement.
 \begin{equation}
-\theta_{k+1} = \theta_{k} - h_{k} \nabla f_i.
+\vect{\theta}_{k+1} = \vect{\theta}_{k} - h_{k} \nabla f_i.
 \end{equation}
 Gradient descent method can be considered as an Euler discretization of the ordinary differential equation (ODE) of the form of the gradient flow
 \begin{equation}\label{strang:euler}
-    \frac{d \theta}{d t} = -\nabla f(\theta).
+    \frac{d \vect{\theta}}{d t} = -\nabla f(\vect{\theta}).
 \end{equation}
 In continuous time, SGD if often analyzed by introducing a noise into the right-hand side of \eqref{strang:euler}. However, for real dataset the distribution of the noise obtained by replacing the full gradient by its minibatch variant is not known and can be different for different problems. Instead, we propose a new view on the SGD as a \emph{first-order splitting scheme} for \eqref{strang:euler}, thus shedding a new light on SGD-type algorithms. This representation allows to use more efficient splitting schemes for the approximation of the full gradient flow. We show, that second-order Marchuk/Strang splitting scheme (\cite{marchuk1968some}, \cite{strang1968construction}) provides faster convergence 
 
@@ -119,99 +121,93 @@ We want to establish the connection between splitting scheme for ODE and stochas
 \subsection{Splitting schemes for ODEs}
 The best example to start from is simple ODE with right-hand-side, consisting of two summands:
 \begin{equation}
-    \frac{d \theta}{d t} = - \frac{1}{2} \left( g_1(\theta) + g_2(\theta)\right)
+    \frac{d \vect{\theta}}{d t} = - \frac{1}{2} \left( g_1(\vect{\theta}) + g_2(\vect{\theta})\right)
     \label{strang:gradientflow}
 \end{equation}
-Suppose, we want to find the solution $\theta(h)$ of \eqref{strang:gradientflow} via integrating it on the small timestep $h$. The first order splitting scheme defined by solving first:
+Suppose, we want to find the solution $\vect{\theta}(h)$ of \eqref{strang:gradientflow} via integrating it on the small timestep $h$. The first order splitting scheme defined by solving first:
 $$
-\frac{d \theta}{d t} = - \frac{1}{2} g_1(\theta), \quad \theta(0) = \theta_0
+\frac{d \vect{\theta}}{d t} = - \frac{1}{2} g_1(\vect{\theta}), \quad \vect{\theta}(0) = \vect{\theta}_0
 $$
-with exact solution $\theta_1(h)$ at the moment $h$ , followed by
+with exact solution $\vect{\theta}_1(h)$ at the moment $h$ , followed by
 $$
-\frac{d \theta}{d t} = - \frac{1}{2} g_2(\theta), \quad \theta(0) = \theta_1(h)
+\frac{d \vect{\theta}}{d t} = - \frac{1}{2} g_2(\vect{\theta}), \quad \vect{\theta}(0) = \vect{\theta}_1(h)
 $$
-with exact solution $\theta_2(h)$ at the moment $h$. Thus, the first order approximation could be written as a combinations of both solutions:
+with exact solution $\vect{\theta}_2(h)$ at the moment $h$. Thus, the first order approximation could be written as a combinations of both solutions:
 $$
-\theta^I(h) = \theta_2(h) \circ \theta_1(h) \circ \theta_0,
+\vect{\theta}^I(h) = \vect{\theta}_2(h) \circ \vect{\theta}_1(h) \circ \vect{\theta}_0,
 $$
 while the second order scheme takes 3 substeps:
 $$
-\theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2(h) \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
+\vect{\theta}^{II}(h) = \vect{\theta}_1\left(\frac{h}{2}\right) \circ \vect{\theta}_2(h) \circ \vect{\theta}_1\left(\frac{h}{2}\right) \circ \vect{\theta}_0
 $$
 Order of scheme defines the degree of polynomial of $h$, up to which the true solution and approximation are coincide. The local error of both schemes is given by Baker - Campbell - Hausdorff formula (\cite{baker1901further}, \cite{campbell1896law}, \cite{hausdorff1906symbolische}) (see \cite{macnamara2016operator} for the details)
 \begin{equation}
     \label{strang:lie_error}
-    \theta^I(h) - \theta(h) = \frac{h^2}{2} \left[g_{1}, g_{2}\right]  + \mathcal{O}(h^3),
+    \vect{\theta}^I(h) - \vect{\theta}(h) = \frac{h^2}{2} \left[g_{1}, g_{2}\right]  + \mathcal{O}(h^3),
 \end{equation}
 \begin{equation}
     \label{strang:marchuk_error}
     \begin{split}
-    &\theta^{II}(h) - \theta(h) =\\&= \frac{h^{3}}{24} \left([[g_1, g_2], g_1]+2[[g_1, g_2], g_2]\right)+\mathcal{O}\left(h^{4}\right)
+    &\vect{\theta}^{II}(h) - \vect{\theta}(h) =\\&= \frac{h^{3}}{24} \left([[g_1, g_2], g_1]+2[[g_1, g_2], g_2]\right)+\mathcal{O}\left(h^{4}\right)
     \end{split}
 \end{equation}
 
-where $\left[ g_1, g_2\right] = \frac{d g_1}{d \theta} g_2 - \frac{d g_2}{d \theta} g_1 $ stands for commutator of the vector fields $g_1$ and $g_2$. The $\theta_0 = \theta(0)$ for initial condition of original ODE.
+where $\left[ g_1, g_2\right] = \frac{d g_1}{d \vect{\theta}} g_2 - \frac{d g_2}{d \vect{\theta}} g_1 $ stands for commutator of the vector fields $g_1$ and $g_2$. The $\vect{\theta}_0 = \vect{\theta}(0)$ for initial condition of original ODE.
 
 Note, that the basic idea of splitting could be also applied, when the number of terms in the right-hand side of ODE is greater, than two. In this case splitting scheme will take the following form:
 \begin{equation}\label{strang:marchuk}
-	\theta^I(h) = \theta_m(h) \circ \theta_{m-1} \circ \ldots \circ \theta_2(h) \circ \theta_1(h) \circ \theta_0
+	\vect{\theta}^I(h) = \vect{\theta}_m(h) \circ \vect{\theta}_{m-1} \circ \ldots \circ \vect{\theta}_2(h) \circ \vect{\theta}_1(h) \circ \vect{\theta}_0
 \end{equation}
 \begin{equation}\label{strang:strang}
 \begin{split}
-	\theta^{II}(h) = \theta_1\left(\frac{h}{2}\right) \circ \theta_2\left(\frac{h}{2}\right) \circ\ldots \theta_m(h) \circ \ldots \\ \ldots \circ \theta_2\left(\frac{h}{2}\right)  \circ \theta_1\left(\frac{h}{2}\right) \circ \theta_0
+	\vect{\theta}^{II}(h) = \vect{\theta}_1\left(\frac{h}{2}\right) \circ \vect{\theta}_2\left(\frac{h}{2}\right) \circ\ldots \vect{\theta}_m(h) \circ \ldots \\ \ldots \circ \vect{\theta}_2\left(\frac{h}{2}\right)  \circ \vect{\theta}_1\left(\frac{h}{2}\right) \circ \vect{\theta}_0
 \end{split}
 \end{equation}
 
 \subsection{SGD as approximation for the Gradient Flow equation}
 Now we consider classical SGD method as a splitting scheme for the full gradient descent (\cite{cauchy1847methode}). Suppose, we have the simplest ($m=2$) finite sum minimization problem:
 $$
-\min_{\theta \in \mathbb{R}^n} \frac{1}{m}\sum\limits_{i=1}^m f_i(\theta) = \min_{\theta \in \mathbb{R}^n} \frac{1}{2} \left( f_1(\theta) + f_2(\theta)\right)
+\min_{\vect{\theta} \in \mathbb{R}^n} \frac{1}{m}\sum\limits_{i=1}^m f_i(\vect{\theta}) = \min_{\vect{\theta} \in \mathbb{R}^n} \frac{1}{2} \left( f_1(\vect{\theta}) + f_2(\vect{\theta})\right)
 $$
-Let us denote by $g_i^k = \nabla f_i(\theta_k)$, than, the vanilla gradient descent will be written as
+Let us denote by $g_i^k = \nabla f_i(\vect{\theta}_k)$, than, the vanilla gradient descent will be written as
 $$
-\theta_{k+1} = \theta_k - h\cdot\frac{1}{2} \left( g^k_1 + g^k_2\right),
+\vect{\theta}_{k+1} = \vect{\theta}_k - h\cdot\frac{1}{2} \left( g^k_1 + g^k_2\right),
 $$
 while SGD version will take steps iteratively over minibatch gradient directions:
 \begin{align*}\label{strang:sgd2}
-\theta_{k+1} &= \theta_k - h\cdot g^k_1 \\
-\theta_{k+2} &= \theta_{k+1} - h\cdot  g^{k+1}_2
+\vect{\theta}_{k+1} &= \vect{\theta}_k - h\cdot g^k_1 \\
+\vect{\theta}_{k+2} &= \vect{\theta}_{k+1} - h\cdot  g^{k+1}_2
 \end{align*}
 These two iterations forms an epoch in SGD approach. Each of the substeps can be considered as a forward Euler method for the discretization of the ODE for a timestep $h$
 \begin{align*}
-    \frac{d \theta^I}{d t} = -g_1, \quad \theta^I(0) = \theta_{k},\\
-    \frac{d \theta^{II}}{d t} = -g_2, \quad \theta^{II}(0) = \theta^{I}(h),
+    \frac{d \vect{\theta}^I}{d t} = -g_1, \quad \vect{\theta}^I(0) = \vect{\theta}_{k},\\
+    \frac{d \vect{\theta}^{II}}{d t} = -g_2, \quad \vect{\theta}^{II}(0) = \vect{\theta}^{I}(h),
 \end{align*}
 therefore the final result for a sufficiently small $h$ approximates the gradient flow for at time $t + h$. The vanilla gradient descent, however, is only approximating the gradient flow at time $t + h/2$. For larger number of minibatches, rather then the GD flow. One can notice, that in SGD we use a very simple time integration inside the substep. In some cases, we can integrate the subproblem exactly, without using forward Euler scheme. Generalized linear models are among such problems, but we will first study the linear least squares case in more details, since in this case we can obtain non-trivial error bounds.
 
 \subsection{Splitting approximation for the Gradient Flow equation}
 
-It is interesting to look how the pure splitting scheme corresponds to the SGD approach. For this purpose we consider illustrative example of Gradient Flow equation \ref{strang:simple_GF}, where the right-hand side of ODE is just the sum of operators acting on $\theta$, which allows us to apply splitting scheme approximation directly.
+It is interesting to look how the pure splitting scheme corresponds to the SGD approach. For this purpose we consider illustrative example of Gradient Flow equation \ref{strang:simple_GF}, where the right-hand side of ODE is just the sum of operators acting on $\vect{\theta}$, which allows us to apply splitting scheme approximation directly.
 \begin{equation}
 \label{strang:simple_GF}
-\frac{d \theta}{d t} = -\frac{1}{2} \sum\limits_{i=1}^2 \nabla f_i (\theta) = - \frac{1}{2} \nabla f_1 (\theta) -\frac{1}{2}  \nabla f_2 (\theta)
+\frac{d \vect{\theta}}{d t} = -\frac{1}{2} \sum\limits_{i=1}^2 \nabla f_i (\vect{\theta}) = - \frac{1}{2} \nabla f_1 (\vect{\theta}) -\frac{1}{2}  \nabla f_2 (\vect{\theta})
 \end{equation}
 
 In order to establish the connection between splitting scheme and SGD we use the Euler discretization below:
 
-% \begin{align*}
-% % \label{strang:simple_GF_splitting}
-% &\text{First splitting step: } &\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_1(\theta)  &\to\text{ Euler discretization}\to &\tilde{\theta}_{I} = \theta_0 - \frac{h}{2}\nabla f_1 (\theta_0) \\
-% &\text{Second splitting step: } &\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_2(\theta)  &\to\text{ Euler discretization}\to &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
-% \end{align*}
-
 \begin{align*}
 % \label{strang:simple_GF_splitting}
 &\qquad\text{Splitting step} &\text{Euler discretization} \\
-&\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_1(\theta) &\tilde{\theta}_{I} = \theta_0 - \frac{h}{2}\nabla f_1 (\theta_0) \\
-&\frac{d \theta}{d t} = -\frac{1}{2}\nabla f_2(\theta) &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
+&\frac{d \vect{\theta}}{d t} = -\frac{1}{2}\nabla f_1(\vect{\theta}) &\tilde{\vect{\theta}}_{I} = \vect{\theta}_0 - \frac{h}{2}\nabla f_1 (\vect{\theta}_0) \\
+&\frac{d \vect{\theta}}{d t} = -\frac{1}{2}\nabla f_2(\vect{\theta}) &\vect{\theta}_{I} = \tilde{\vect{\theta}}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\vect{\theta}}_{I})
 \end{align*}
 
 
 \begin{align*}
 % \label{strang:simple_GF_splitting}
 &\qquad\text{SGD epoch} &\text{First order splitting} \\
-&\tilde{\theta}_{SGD} = \theta_0 - h \nabla f_1 (\theta_0) &\tilde{\theta}_{I} = \theta_0 - \frac{h}{2}\nabla f_1 (\theta_0) \\
-&\theta_{SGD} = \tilde{\theta}_{SGD} - h \nabla f_2 (\tilde{\theta}_{SGD}) &\theta_{I} = \tilde{\theta}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\theta}_{I})
+&\tilde{\vect{\theta}}_{SGD} = \vect{\theta}_0 - h \nabla f_1 (\vect{\theta}_0) &\tilde{\vect{\theta}}_{I} = \vect{\theta}_0 - \frac{h}{2}\nabla f_1 (\vect{\theta}_0) \\
+&\vect{\theta}_{SGD} = \tilde{\vect{\theta}}_{SGD} - h \nabla f_2 (\tilde{\vect{\theta}}_{SGD}) &\vect{\theta}_{I} = \tilde{\vect{\theta}}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\vect{\theta}}_{I})
 \end{align*}
 
 Thus, we can conclude, that \textit{one epoch of SGD is just the splitting scheme for the discretized Gradient Flow ODE with $2 \cdot h$ step size ($m \cdot h$ in case of $m$ batches)}
@@ -225,85 +221,85 @@ This idea gives additional intuition on the method. Both approaches are solving 
 \section{Applications}
 \subsection{Linear least squares}
 \subsubsection{Problem}
-Let $f_i(\theta) = \Vert x_i^{\top} \theta - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
+Let $f_i(\vect{\theta}) = \Vert \vect{x_i}^{\top} \vect{\theta} - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
 \begin{equation}\label{strang:LLS}
-   f(\theta) = \frac{1}{n}\Vert X \theta - y \Vert_2^2  = \frac{1}{n}\sum\limits_{i=1}^s\Vert X_i \theta - y_i \Vert_2^2\to \min_{\theta \in \mathbb{R}^p},
+   f(\vect{\theta}) = \frac{1}{n}\Vert X \vect{\theta} - \vect{y} \Vert_2^2  = \frac{1}{n}\sum\limits_{i=1}^s\Vert X_i \vect{\theta} - \vect{y_i} \Vert_2^2\to \min_{\vect{\theta} \in \mathbb{R}^p},
 \end{equation}
-where $X \in \mathbb{R}^{n \times p}$ and $y \in \mathbb{R}^p$ and the second part of the equation stands for $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, y_i \in \mathbb{R}^{b}$
+where $X \in \mathbb{R}^{n \times p}$ and $\vect{y} \in \mathbb{R}^p$ and the second part of the equation stands for $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, \vect{y_i} \in \mathbb{R}^{b}$
 
 \begin{equation}\label{strang:LLS_grad}
-\nabla_\theta f(\theta) = \nabla f(\theta) = \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
+\nabla_\theta f(\vect{\theta}) = \nabla f(\vect{\theta}) = \frac{1}{n}\sum\limits_{i=1}^s X_i^\top(X_i \vect{\theta} - \vect{y_i})
 \end{equation}
 
 The gradient flow equation will be written as follows:
 \begin{equation}\label{strang:LLS_GF}
-\frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \theta - y_i)
+\frac{d \vect{\theta}}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \vect{\theta} - \vect{y_i})
 \end{equation}
 
 \subsubsection{Exact solution of the local problem}
 On each splitting approximation step we need to solve the local problem:
 \begin{equation}\label{strang:LLS_local_problem}
-\frac{d \theta}{d t} = - \frac{1}{n} X_i^\top( X_i \theta - y_i)
+\frac{d \vect{\theta}}{d t} = - \frac{1}{n}X_i^\top(X_i \vect{\theta} - \vect{y_i})
 \end{equation}
-\begin{theorem}\label{strang:LLS_local_solution} For any matrix $X_i \in \mathbb{R}^{b \times p}$, any vector of right-hand side $y_i \in \mathbb{R}^{b}$ and initial vector of parameters $\theta_0$, there is a solution of the ODE in \eqref{strang:LLS_local_problem}, given by formula:
+\begin{theorem}\label{strang:LLS_local_solution} For any matrix $\vect{x_i} \in \mathbb{R}^{b \times p}$, any vector of right-hand side $\vect{y_i} \in \mathbb{R}^{b}$ and initial vector of parameters $\vect{\theta}_0$, there is a solution of the ODE in \eqref{strang:LLS_local_problem}, given by formula:
 \begin{equation}\label{strang:LLS_local_solution_formula}
 \begin{split}
-\theta(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \theta_0 - R_i^{-\top}y_i\right) + \\ &+ Q_iR_i^{-\top}y_i + (I - Q_iQ_i^\top)\theta_0,
+\vect{\theta}(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + \\ &+ Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0,
 \end{split}
 \end{equation}
-where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ stands for the $QR$ decomposition of the matrix $X_i^\top$, $X_i^\top = Q_i R_i$.
+where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ stands for the $QR$ decomposition of the matrix $\vect{x_i}^\top$, $\vect{x_i}^\top = Q_i R_i$.
 \end{theorem}
 
 \begin{proof}
 Given $X_i^\top = Q_i R_i$, we have $(I - Q_iQ_i^\top)X_i^\top = 0$. Note, that $Q_i$ is left unitary matrix, i.e. $Q_i^\top Q_i = I$. 
 \begin{align}
-\nonumber \frac{d \theta}{d t} &= - \frac{1}{n} X_i^\top( X_i \theta - y_i) \\
-\nonumber (I - Q_iQ_i^\top)\frac{d \theta}{d t} &= 0 \\
-\nonumber \frac{d \theta}{d t} &= Q_i\frac{d (Q_i^\top\theta)}{d t} \quad Q_i^\top \theta = \eta_i\\ 
-\nonumber \frac{d \theta}{d t} &= Q_i\frac{d \eta_i}{d t} \quad \text{integrate from $0$ to $h$}\\ 
-\label{strang:lls_theorem_theta_from_eta}\theta(h) &= Q_i \left(\eta_i(h) - \eta_i(0) \right) + \theta_0
+\nonumber \frac{d \vect{\theta}}{d t} &= - \frac{1}{n}X_i^\top(X_i \vect{\theta} - \vect{y_i}) \\
+\nonumber (I - Q_iQ_i^\top)\frac{d \vect{\theta}}{d t} &= 0 \\
+\nonumber \frac{d \vect{\theta}}{d t} &= Q_i\frac{d (Q_i^\top\vect{\theta})}{d t} \quad Q_i^\top \vect{\theta} = \vect{\eta_i}\\ 
+\nonumber \frac{d \vect{\theta}}{d t} &= Q_i\frac{d \vect{\eta_i}}{d t} \quad \text{integrate from $0$ to $h$}\\ 
+\label{strang:lls_theorem_theta_from_eta}\vect{\theta}(h) &= Q_i \left(\vect{\eta_i}(h) - \vect{\eta_i}(0) \right) + \vect{\theta}_0
 \end{align}
 
 On the other hand:
 \begin{align}\nonumber
-\frac{d \eta_i}{d t} &= Q_i^\top\frac{d \theta}{d t} =  - \frac{1}{n} Q_i^\top  X_i^\top( X_i \theta - y_i) = \\ 
-\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i( R_i^\top Q_i^\top \theta - y_i) =\\
-&= - \frac{1}{n} \left( R_iR_i^\top \eta_i - R_i y_i\right) \label{strang:lls_theorem_eta_from_theta}
+\frac{d \vect{\eta_i}}{d t} &= Q_i^\top\frac{d \vect{\theta}}{d t} =  - \frac{1}{n} Q_i^\top X_i^\top(X_i \vect{\theta} - \vect{y_i}) = \\ 
+\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i( R_i^\top Q_i^\top \vect{\theta} - \vect{y_i}) =\\
+&= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i} - R_i \vect{y_i}\right) \label{strang:lls_theorem_eta_from_theta}
 \end{align}
 
-Consider the moment of time $t = \infty$. $\frac{d \eta}{d t} = 0$, since $\exists \theta^*, Q_i^\top \theta^* = \eta_i^*$. Also consider \eqref{strang:lls_theorem_eta_from_theta}:
+Consider the moment of time $t = \infty$. $\frac{d \vect{\eta_i}}{d t} = 0$, since $\exists \vect{\theta}^*, Q_i^\top \vect{\theta}^* = \vect{\eta_i}^*$. Also consider \eqref{strang:lls_theorem_eta_from_theta}:
 
 \begin{equation}\label{strang:lls_theorem_eta_star}
 \begin{split}
-\frac{d \eta_i}{d t} = 0 &= - \frac{1}{n} \left( R_iR_i^\top \eta_i^* - R_i y_i\right) \\ R_i y_i &= R_iR_i^\top \eta_i^*
+\frac{d \vect{\eta_i}}{d t} = 0 &= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i}^* - R_i \vect{y_i}\right) \\ R_i \vect{y_i} &= R_iR_i^\top \vect{\eta_i}^*
 \end{split}
 \end{equation}
 
 Now we look at the \eqref{strang:lls_theorem_eta_from_theta} with the replacement, given in \eqref{strang:lls_theorem_eta_star}:
 
 \begin{align*}
-\frac{d \eta_i}{d t} &= - \frac{1}{n} \left( R_iR_i^\top \eta_i- R_iR_i^\top \eta_i^*\right) \\
-\frac{d \eta_i}{d t} &= - \frac{1}{n} R_iR_i^\top \left( \eta_i- \eta_i^*\right) \qquad \text{integrate from $0$ to $h$} \\
-\eta_i(h) - \eta_i^* &= e^{- \frac{1}{n} R_iR_i^\top h} (\eta_i(0) - \eta_i^*) \\ 
-&\text{while } \eta_i^* = R_i^{-\top}y_i, \eta_i(0) = Q_i^\top \theta_0 \\
-\eta_i(h) &= e^{- \frac{1}{n} R_iR_i^\top h} (Q_i^\top \theta_0 - R_i^{-\top}y_i) + R_i^{-\top}y_i 
+\frac{d \vect{\eta_i}}{d t} &= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i}- R_iR_i^\top \vect{\eta_i}^*\right) \\
+\frac{d \vect{\eta_i}}{d t} &= - \frac{1}{n} R_iR_i^\top \left( \vect{\eta_i}- \vect{\eta_i}^*\right) \qquad \text{integrate from $0$ to $h$} \\
+\vect{\eta_i}(h) - \vect{\eta_i}^* &= e^{- \frac{1}{n} R_iR_i^\top h} (\vect{\eta_i}(0) - \vect{\eta_i}^*) \\ 
+&\text{while } \vect{\eta_i}^* = R_i^{-\top}\vect{y_i}, \vect{\eta_i}(0) = Q_i^\top \vect{\theta}_0 \\
+\vect{\eta_i}(h) &= e^{- \frac{1}{n} R_iR_i^\top h} (Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}) + R_i^{-\top}\vect{y_i} 
 \end{align*}
 
 Using \eqref{strang:lls_theorem_theta_from_eta} we obtain the target formula
 \begin{equation*}
 \begin{split}
-\theta(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \theta_0 - R_i^{-\top}y_i\right) + \\ &+ Q_iR_i^{-\top}y_i + (I - Q_iQ_i^\top)\theta_0,
+\vect{\theta}(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + \\ &+ Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0,
 \end{split}
 \end{equation*}
 
 \end{proof}
 % In case of the linear right-hand side of an ODE it is easy to solve it analytically. Now let see how the splitting approximation itself depends on the step size $h$.
-% $$\theta^{GD} (h) = e^{-Ah} \theta, $$
+% $$\vect{\theta}^{GD} (h) = e^{-Ah} \vect{\theta}, $$
 % and splitting gives
-% $$\theta^{SGD}(h) = e^{-A_1 h} e^{-A_2 h} \theta.$$
+% $$\vect{\theta}^{SGD}(h) = e^{-A_1 h} e^{-A_2 h} \vect{\theta}.$$
 % The error is bounded as
 % $$
-%  \Vert \theta^{GD} (h) - \theta^{SGD}(h) \Vert \leq  \Vert E_1(h) \Vert \Vert \theta \Vert,
+%  \Vert \vect{\theta}^{GD} (h) - \vect{\theta}^{SGD}(h) \Vert \leq  \Vert E_1(h) \Vert \Vert \vect{\theta} \Vert,
 % $$
 % where
 % \begin{equation}\label{strang:error}
@@ -313,7 +309,7 @@ Using \eqref{strang:lls_theorem_theta_from_eta} we obtain the target formula
 % \begin{equation}\label{strang:sheng}
 %     \Vert E(t) \Vert \leq \frac{t^2}{2} \Vert [ A_1, A_2] \Vert \max \{ e^{t \mu(A_1 + A_2}), e^{t(\mu(A_1) + \mu(A_2))}\},
 % \end{equation}
-% where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in our case all matrices are symmetric, thus these are largest eigenvalues of the matrix. The estimate \eqref{strang:sheng} and its generalization to a larger number of summands is not very useful for us, since we will have matrices $X_i$ that have fewer rows, than column, i.e. matrices $A_i$ will have zero eigenvalues, thus the the maximum term will be equal to $1$, and the upper bound will grow quadratically with $h$. In reality, the behaviour is very different, see Figure~\ref{strang:modelfig}. In this example, we took $N=p=2$, batch size $1$. It can be seen, that the true error reaches a plateu, whereas the upper bound is growing quadratically with $t$.
+% where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in our case all matrices are symmetric, thus these are largest eigenvalues of the matrix. The estimate \eqref{strang:sheng} and its generalization to a larger number of summands is not very useful for us, since we will have matrices $\vect{x_i}$ that have fewer rows, than column, i.e. matrices $A_i$ will have zero eigenvalues, thus the the maximum term will be equal to $1$, and the upper bound will grow quadratically with $h$. In reality, the behaviour is very different, see Figure~\ref{strang:modelfig}. In this example, we took $N=p=2$, batch size $1$. It can be seen, that the true error reaches a plateu, whereas the upper bound is growing quadratically with $t$.
 
 % We will now prove a better upper bound, that takes into account  possible zero eigenvalues of the matrices $A_1$ and $A_2$.
 
@@ -322,18 +318,18 @@ Using \eqref{strang:lls_theorem_theta_from_eta} we obtain the target formula
 Kaczmarz method \cite{kaczmarz1937method}, \cite{strohmer2009randomized}, \cite{gower2015randomized} is a well-known iterative algorithm for solving linear systems
 It is interesting to mention, that splitting approach immediately leads to the Kaczmarz method for solving linear system in the same setting with unit batch size.
 
-When the batch size is equal to one, we need to do $n$ QR decompositions for each transposed batch matrix, which is just column vector $x_i$ in our case:
+When the batch size is equal to one, we need to do $n$ QR decompositions for each transposed batch matrix, which is just column vector $\vect{x_i}$ in our case:
 
 \begin{equation}
-x_i = q_i r_i = \underset{q_i }{\frac{x_i}{\|x_i\|}} \underset{r_i}{\vphantom{\frac{x_i}{\|x_i\|}} \|x_i\|}
+\vect{x_i} = \vect{q_i} \vect{r_i} = \underset{\vect{q_i} }{\frac{\vect{x_i}}{\|\vect{x_i}\|}} \underset{\vect{r_i}}{\vphantom{\frac{\vect{x_i}}{\|\vect{x_i}\|}} \|\vect{x_i}\|}
 \end{equation}
 
 Now, we need to use \eqref{strang:LLS_local_solution_formula} to derive analytic local solution in that case:
 
 \begin{equation*}
 \begin{split}
-\theta(h) &= \frac{x_i}{\|x_i\|} e^{-\frac{\|x_i\|^2 h}{n}} \left( \frac{x_i^\top}{\|x_i\|} \theta_0 - \frac{y_i}{\|x_i\|}\right) + \\ &+ \frac{x_i}{\|x_i\|^2}y_i + \left(I - \frac{x_ix_i^\top}{\|x_i\|^2}\right)\theta_0 = \\
-&= \frac{\left(y_i - x_i^\top\theta_0 \right)}{\|x_i\|^2}  \left(1 - e^{-\frac{\|x_i\|^2 h}{n}}\right)x_i + \theta_0
+\vect{\theta}(h) &= \frac{\vect{x_i}}{\|\vect{x_i}\|} e^{-\frac{\|\vect{x_i}\|^2 h}{n}} \left( \frac{\vect{x_i}^\top}{\|\vect{x_i}\|} \vect{\theta}_0 - \frac{y_i}{\|\vect{x_i}\|}\right) + \\ &+ \frac{\vect{x_i}}{\|\vect{x_i}\|^2}y_i + \left(I - \frac{\vect{x_i}\vect{x_i}^\top}{\|\vect{x_i}\|^2}\right)\vect{\theta}_0 = \\
+&= \frac{\left(y_i -\vect{x_i}^\top\vect{\theta}_0 \right)}{\|\vect{x_i}\|^2}  \left(1 - e^{-\frac{\|\vect{x_i}\|^2 h}{n}}\right)\vect{x_i} + \vect{\theta}_0
 \end{split}
 \end{equation*}
 
@@ -341,16 +337,16 @@ It can be easily seen, that:
 
 \begin{equation}
 \label{strang:splitting_limit_kaczmarz}
-\lim_{h \to \infty} \theta(h) = \frac{\left(y_i - x_i^\top\theta_0 \right)}{\|x_i\|^2} x_i + \theta_0,
+\lim_{h \to \infty} \vect{\theta}(h) = \frac{\left(y_i - \vect{x_i}^\top\vect{\theta}_0 \right)}{\|\vect{x_i}\|^2} \vect{x_i} + \vect{\theta}_0,
 \end{equation}
 which is exact formula for Kaczmarz method for solving linear system. This result correlates with the statements of \cite{needell2014stochastic}, but provides us with a new sense of similarity between SGD and Kaczmarz method.
 
 \subsubsection{Upper bound on the global splitting error}
 
-Suppose, that we have only two batches, and the problem \eqref{strang:LLS} is consistent, i.e. there exists an exact solution $\theta_*$ such as $X \theta_* = y$. The GD flow has the form
+Suppose, that we have only two batches, and the problem \eqref{strang:LLS} is consistent, i.e. there exists an exact solution $\vect{\theta}_*$ such as $X \vect{\theta}_* = \vect{y}$. The GD flow has the form
 \begin{equation}\label{strang:model1}
 \begin{split}
-    \frac{d \theta}{d t} &= -X^{\top} (X \theta - y) = -X^{\top} X(\theta - \theta_*) =\\ &= -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\theta - \theta_*),
+    \frac{d \vect{\theta}}{d t} &= -X^{\top} (X \vect{\theta} - \vect{y}) = -X^{\top} X(\vect{\theta} - \vect{\theta}_*) =\\ &= -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\vect{\theta} - \vect{\theta}_*),
 \end{split}
 \end{equation}
 i.e. the splitting scheme corresponds to a linear operator splitting
@@ -359,7 +355,7 @@ i.e. the splitting scheme corresponds to a linear operator splitting
 A = A_1 + A_2, \; A = -X^{\top} X, \; A_i = -X^{\top}_i X_i, \; i = 1, 2.
 \end{equation*}
 
-Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\theta_* = 0$,
+Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\vect{\theta}_* = 0$,
 
 Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
 \begin{equation*}
@@ -445,23 +441,23 @@ The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validi
 \subsubsection{Problem}
 In this classification task then problem \eqref{strang:finitesum} takes the following form:
 \begin{equation}\label{strang:LogReg}
--\frac{1}{n} \sum_{i=1}^n\left(y_i \ln h_{\theta}(x_i)  + (1-y_i) \ln (1-h_{\theta}(x_i))\right) \to \min_{\theta \in \mathbb{R}^p},
+-\frac{1}{n} \sum_{i=1}^n\left(y_i \ln \sigma(\vect{\theta}^\top\vect{x_i})  + (1-y_i) \ln (1-\sigma(\vect{\theta}^\top\vect{x_i}))\right) \to \min_{\vect{\theta} \in \mathbb{R}^p},
 \end{equation}
-where $h_\theta(x_i) = \frac{1}{1 + e^{-\theta^\top x_i}}$ is the hypothesis function with given parameter $\theta$ from the object $x_i$, while $ y_i \in \{0,1\}$ stands for the label of the object class.
+where $\sigma(x) = \frac{1}{1 + e^{-x}}$ is the sigmoid function, while $ y_i \in \{0,1\}$ stands for the label of the object class.
 
 \begin{equation}\label{strang:LogReg_grad}
-\nabla_\theta f(\theta) = \nabla f(\theta) = \frac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
+\nabla_\theta f(\vect{\theta}) = \nabla f(\vect{\theta}) = \frac{1}{n}\sum\limits_{i=1}^n \vect{x_i}(\sigma(\vect{\theta}^\top\vect{x_i}) - y_i)
 \end{equation}
 
 The gradient flow equation will be written as follows:
 \begin{equation}\label{strang:LogReg_GF}
-\frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
+\frac{d \vect{\theta}}{d t} = - \frac{1}{n}\sum\limits_{i=1}^n \vect{x_i}(\sigma(\vect{\theta}^\top\vect{x_i}) - y_i)
 \end{equation}
 
-Our particular interest lies in mini-batch reformulation of the given problem. We consider $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, Y_i \in \mathbb{R}^{b}$ and  $H_\theta(X_i) = (h_\theta(x_{i_1}), \ldots, (h_\theta(x_{i_b}))^\top$ is simple batch of hypothesis function values:
+Our particular interest lies in mini-batch reformulation of the given problem. We consider $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, \vect{y_i} \in \mathbb{R}^{b}$ and  $\sigma(\vect{x})$ stands for the element-wise sigmoid function.
 
 \begin{equation}\label{strang:LogReg_GF_batch}
-\frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top(H_\theta(X_i) - Y_i)
+\frac{d \vect{\theta}}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top\left(\sigma\left(X_i\vect{\theta}\right) - \vect{y_i}\right)
 \end{equation}
 
 \subsubsection{Splitting scheme and local problem}
@@ -469,7 +465,7 @@ Our particular interest lies in mini-batch reformulation of the given problem. W
 Since we are applying splitting scheme to find the approximate solution of the \eqref{strang:LogReg_GF_batch}, each local problem should be written as follows:
 
 \begin{equation}\label{strang:LogReg_GF_local}
-\frac{d \theta}{d t} = - \frac{1}{n} X_i^\top(H_\theta(X_i) - Y_i)
+\frac{d \vect{\theta}}{d t} =  - \frac{1}{n} X_i^\top\left(\sigma\left(X_i\vect{\theta}\right) - \vect{y_i}\right)
 \end{equation}
 
 Note, that this is not linear equation and cannot be solved as easy as in Theorem \ref{strang:LLS_local_solution}. However, we can apply the same technique to reduce the dimension of ODE, which is needed to be solved numerically. 
@@ -477,31 +473,28 @@ Note, that this is not linear equation and cannot be solved as easy as in Theore
 Suppose, we have $QR$ decomposition of each batch data matrix $X_i^\top = Q_i R_i$, then we can multiply both sides of \eqref{strang:LogReg_GF_local} on the $(I - Q_iQ_i^\top)$ on the left. 
 
 \begin{align}
-\nonumber (I - Q_iQ_i^\top)\frac{d \theta}{d t} &= (I - Q_iQ_i^\top) \frac{1}{n} X_i^\top(Y_i -H_\theta(X_i)) \\
-\nonumber \frac{d \theta}{d t} &= Q_i\frac{d (Q_i^\top\theta)}{d t} \\
-\nonumber \frac{d \theta}{d t} &= Q_i\frac{d (Q_i^\top\theta)}{d t} \quad Q_i^\top \theta = \eta_i\\ 
-\nonumber \frac{d \theta}{d t} &= Q_i\frac{d \eta_i}{d t} \quad \text{integrate from $0$ to $h$}\\ 
-\label{strang:logreg_theta_from_eta}\theta(h) &= Q_i \left(\eta_i(h) - \eta_i(0) \right) + \theta_0
+\nonumber (I - Q_iQ_i^\top)\frac{d \vect{\theta}}{d t} &= (I - Q_iQ_i^\top) \frac{1}{n} X_i^\top(\vect{y_i} -\sigma\left(X_i\vect{\theta}\right)) \\
+\nonumber \frac{d \vect{\theta}}{d t} &= Q_i\frac{d (Q_i^\top\vect{\theta})}{d t} \quad Q_i^\top \vect{\theta} = \vect{\eta_i}\\ 
+\nonumber \frac{d \vect{\theta}}{d t} &= Q_i\frac{d \vect{\eta_i}}{d t} \quad \text{integrate from $0$ to $h$}\\ 
+\label{strang:logreg_theta_from_eta}\vect{\theta}(h) &= Q_i \left(\vect{\eta_i}(h) - \vect{\eta_i}(0) \right) + \vect{\theta}_0
 \end{align}
 
 On the other hand:
 \begin{align}\nonumber
-\frac{d \eta_i}{d t} &= Q_i^\top\frac{d \theta}{d t} =  - \frac{1}{n} Q_i^\top  X_i^\top(H_\theta(X_i) - Y_i) = \\ 
-\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i(H_\theta(X_i) - Y_i) =\\
-\nonumber&= - \frac{1}{n} R_i(H_\theta(X_i) - Y_i)
+\frac{d \vect{\eta_i}}{d t} &= Q_i^\top\frac{d \vect{\theta}}{d t} =  - \frac{1}{n} Q_i^\top  X_i^\top(\sigma\left(X_i\vect{\theta}\right) - \vect{y_i}) = \\ 
+\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i(\sigma\left(X_i\vect{\theta}\right) - \vect{y_i}) =\\
+\nonumber&= - \frac{1}{n} R_i(\sigma\left(X_i\vect{\theta}\right) - \vect{y_i})
 \end{align}
 
-Recall, that each hypothesis function depends on linear function $x_i^\top \theta$, which means, that in batch reformulation it is just entries of the vector $X_i \theta$. Since we have $QR$ decomposition of $X_i^\top$, we can write: $X_i \theta = R_i^\top Q_i^\top \theta = R_i^\top \eta_i$. In other words:
+Recall, that each hypothesis function depends on linear function $\vect{x_i}^\top \vect{\theta}$, which means, that in batch reformulation it is just entries of the vector $X_i \vect{\theta}$. Since we have $QR$ decomposition of $X_i^\top$, we can write: $X_i \vect{\theta} = R_i^\top Q_i^\top \vect{\theta} = R_i^\top \vect{\eta_i}$. In other words:
 
 \begin{equation}
 \label{strang:logreg_eta_ode}
-\frac{d \eta_i}{d t} = - \frac{1}{n} R_i\left(\sigma\left(R_i \eta_i\right) - Y_i\right),
+\frac{d \vect{\eta_i}}{d t} = - \frac{1}{n} R_i\left(\sigma\left(R_i \vect{\eta_i}\right) - \vect{y_i}\right),
 \end{equation}
 
-where $\sigma(\mathbf{x})$ is element-wise sigmoid function. 
-
 To sum it up, we need to solve \eqref{strang:logreg_eta_ode} (which is much simpler, than original differential equation \eqref{strang:LogReg_GF_local}), than substitute it to the
-\eqref{strang:logreg_theta_from_eta} with $\eta_i(0) = Q_i^\top \theta_0$. Note, that matrices $Q_i$ and $R_i$ can be computed only once before the training.
+\eqref{strang:logreg_theta_from_eta} with $\vect{\eta_i}(0) = Q_i^\top \vect{\theta}_0$. Note, that matrices $Q_i$ and $R_i$ can be computed only once before the training.
 \subsection{Softmax regression}
 \begin{equation*}
 \end{equation*}
