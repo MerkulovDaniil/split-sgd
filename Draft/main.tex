@@ -445,9 +445,9 @@ The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validi
 \subsubsection{Problem}
 In this classification task then problem \eqref{strang:finitesum} takes the following form:
 \begin{equation}\label{strang:LogReg}
-   f(\theta) = -\frac{1}{n} \left(y_i \ln h_{\theta}(x_i)  + (1-y_i) \ln (1-h_{\theta}(x_i))\right) \to \min_{\theta \in \mathbb{R}^p},
+-\frac{1}{n} \sum_{i=1}^n\left(y_i \ln h_{\theta}(x_i)  + (1-y_i) \ln (1-h_{\theta}(x_i))\right) \to \min_{\theta \in \mathbb{R}^p},
 \end{equation}
-where $h_\theta(x_i) = \frac{1}{1 + e^{-\theta^\top x_i}}$ is the hypothesis function with given parameter $\theta$ from the object $x_i$, $ y_i \in \{0,1\}$ stands for the label of the object class.
+where $h_\theta(x_i) = \frac{1}{1 + e^{-\theta^\top x_i}}$ is the hypothesis function with given parameter $\theta$ from the object $x_i$, while $ y_i \in \{0,1\}$ stands for the label of the object class.
 
 \begin{equation}\label{strang:LogReg_grad}
 \nabla_\theta f(\theta) = \nabla f(\theta) = \frac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
@@ -458,8 +458,53 @@ The gradient flow equation will be written as follows:
 \frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^n x_i(h_\theta(x_i) - y_i)
 \end{equation}
 
+Our particular interest lies in mini-batch reformulation of the given problem. We consider $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, Y_i \in \mathbb{R}^{b}$ and  $H_\theta(X_i) = (h_\theta(x_{i_1}), \ldots, (h_\theta(x_{i_b}))^\top$ is simple batch of hypothesis function values:
 
+\begin{equation}\label{strang:LogReg_GF_batch}
+\frac{d \theta}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top(H_\theta(X_i) - Y_i)
+\end{equation}
+
+\subsubsection{Splitting scheme and local problem}
+
+Since we are applying splitting scheme to find the approximate solution of the \eqref{strang:LogReg_GF_batch}, each local problem should be written as follows:
+
+\begin{equation}\label{strang:LogReg_GF_local}
+\frac{d \theta}{d t} = - \frac{1}{n} X_i^\top(H_\theta(X_i) - Y_i)
+\end{equation}
+
+Note, that this is not linear equation and cannot be solved as easy as in Theorem \ref{strang:LLS_local_solution}. However, we can apply the same technique to reduce the dimension of ODE, which is needed to be solved numerically. 
+
+Suppose, we have $QR$ decomposition of each batch data matrix $X_i^\top = Q_i R_i$, then we can multiply both sides of \eqref{strang:LogReg_GF_local} on the $(I - Q_iQ_i^\top)$ on the left. 
+
+\begin{align}
+\nonumber (I - Q_iQ_i^\top)\frac{d \theta}{d t} &= (I - Q_iQ_i^\top) \frac{1}{n} X_i^\top(Y_i -H_\theta(X_i)) \\
+\nonumber \frac{d \theta}{d t} &= Q_i\frac{d (Q_i^\top\theta)}{d t} \\
+\nonumber \frac{d \theta}{d t} &= Q_i\frac{d (Q_i^\top\theta)}{d t} \quad Q_i^\top \theta = \eta_i\\ 
+\nonumber \frac{d \theta}{d t} &= Q_i\frac{d \eta_i}{d t} \quad \text{integrate from $0$ to $h$}\\ 
+\label{strang:logreg_theta_from_eta}\theta(h) &= Q_i \left(\eta_i(h) - \eta_i(0) \right) + \theta_0
+\end{align}
+
+On the other hand:
+\begin{align}\nonumber
+\frac{d \eta_i}{d t} &= Q_i^\top\frac{d \theta}{d t} =  - \frac{1}{n} Q_i^\top  X_i^\top(H_\theta(X_i) - Y_i) = \\ 
+\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i(H_\theta(X_i) - Y_i) =\\
+\nonumber&= - \frac{1}{n} R_i(H_\theta(X_i) - Y_i)
+\end{align}
+
+Recall, that each hypothesis function depends on linear function $x_i^\top \theta$, which means, that in batch reformulation it is just entries of the vector $X_i \theta$. Since we have $QR$ decomposition of $X_i^\top$, we can write: $X_i \theta = R_i^\top Q_i^\top \theta = R_i^\top \eta_i$. In other words:
+
+\begin{equation}
+\label{strang:logreg_eta_ode}
+\frac{d \eta_i}{d t} = - \frac{1}{n} R_i\left(\sigma\left(R_i \eta_i\right) - Y_i\right),
+\end{equation}
+
+where $\sigma(\mathbf{x})$ is element-wise sigmoid function. 
+
+To sum it up, we need to solve \eqref{strang:logreg_eta_ode} (which is much simpler, than original differential equation \eqref{strang:LogReg_GF_local}), than substitute it to the
+\eqref{strang:logreg_theta_from_eta} with $\eta_i(0) = Q_i^\top \theta_0$. Note, that matrices $Q_i$ and $R_i$ can be computed only once before the training.
 \subsection{Softmax regression}
+\begin{equation*}
+\end{equation*}
 \subsection{Problem}
 
 %================================================
@@ -471,6 +516,49 @@ The gradient flow equation will be written as follows:
 \subsection{Time comparison}
 \subsection{Robustness to stepsize choosing}
 
+\subsubsection{Linear Least Squares}
+
+\begin{figure}[ht]
+\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{sgd_split_iterations_lls.pdf}}
+\caption{Random linear system. Averaging on 30 runs.}
+\label{strang:fig:lls_step_iter}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+\begin{figure}[ht]
+\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{sgd_split_time_lls.pdf}}
+\caption{Random linear system. Averaging on 30 runs.}
+\label{strang:fig:lls_step_time}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+\subsubsection{Binary Logistic Regression}
+
+\begin{figure}[ht]
+\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{sgd_split_iterations_logreg.pdf}}
+\caption{MNIST 0,1. Binary logistic regression. Averaging on 30 runs}
+\label{strang:fig:logreg_step_iter}
+\end{center}
+\vskip -0.2in
+\end{figure}
+
+\begin{figure}[ht]
+\vskip 0.2in
+\begin{center}
+\centerline{\includegraphics[width=\columnwidth]{sgd_split_time_logreg.pdf}}
+\caption{MNIST 0,1. Binary logistic regression. Averaging on 30 runs}
+\label{strang:fig:logreg_step_time}
+\end{center}
+\vskip -0.2in
+\end{figure}
 
 %================================================
 % Related work
@@ -525,20 +613,6 @@ General overview of interplay between continuous-time and discrete-time point of
 \includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg2.8e+01}.pdf} \\
 \includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg2.2e+02}.pdf}
 \caption{Binary logistic regression on 0 and 1 from MNIST dataset}
-\end{figure}
-
-\begin{figure}
-\includegraphics[width=0.85\textwidth]{sgd_split_iterations_lls.pdf} \\
-\includegraphics[width=0.85\textwidth]{sgd_split_time_lls.pdf}
-
-\caption{Random linear system. Averaging on 30 runs}
-\end{figure}
-
-\begin{figure}
-\includegraphics[width=0.85\textwidth]{sgd_split_iterations_logreg.pdf} \\
-\includegraphics[width=0.85\textwidth]{sgd_split_time_logreg.pdf}
-
-\caption{MNIST 0,1. Binary logistic regression. Averaging on 30 runs}
 \end{figure}
 
 \end{document}
