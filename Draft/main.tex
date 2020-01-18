@@ -495,10 +495,38 @@ Recall, that each hypothesis function depends on linear function $\vect{x_i}^\to
 
 To sum it up, we need to solve \eqref{strang:logreg_eta_ode} (which is much simpler, than original differential equation \eqref{strang:LogReg_GF_local}), than substitute it to the
 \eqref{strang:logreg_theta_from_eta} with $\vect{\eta_i}(0) = Q_i^\top \vect{\theta}_0$. Note, that matrices $Q_i$ and $R_i$ can be computed only once before the training.
-\subsection{Softmax regression}
-\begin{equation*}
-\end{equation*}
-\subsection{Problem}
+
+\subsection{Softmax Regression}
+\subsubsection{Problem}
+In this classification task then problem \eqref{strang:finitesum} takes the following form:
+\begin{equation}\label{strang:Softmax}
+-\frac{1}{n} \sum_{i=1}^n\log\left(\frac{\vect{y_i}^\top e^{\Theta^\top \vect{x_i}}}{\vect{1}^\top e^{\Theta^\top \vect{x_i}}}\right) \to \min_{\Theta \in \mathbb{R}^{p \times K}},
+\end{equation}
+where $e^{\vect{x}}$ is element-wise exponential function, while $ \vect{y_i} \in \mathbb{R}^K$ stands for the one-hot encoding of the $i$-th object label.
+
+\begin{equation}
+\nabla_\Theta f(\Theta) = -\frac{1}{n} \sum_{i=1}^n\vect{x_i}\left(\vect{y_i} - \frac{ e^{\Theta^\top \vect{x_i}}}{\vect{1}^\top e^{\Theta^\top \vect{x_i}}}\right)^\top
+\end{equation}
+
+\begin{equation}
+\nabla_\Theta f(\Theta) = -\frac{1}{n} \sum_{i=1}^n\vect{x_i}\left(\vect{y_i} - s\left(\Theta^\top \vect{x_i}\right)\right)^\top
+\end{equation}
+
+% \begin{equation}
+% \nabla_{\theta_k} f = -\frac{1}{n} \sum_{i=1}^n\left(y_i^k - \frac{ e^{\theta_k^\top \vect{x_i}}}{\vect{1}^\top e^{\Theta \vect{x_i}}}\right)\vect{x_i}^\top
+% \end{equation}
+
+Here we use $s(\vect{x})$ as a softmax function of a vector $\vect{x}$, i.e. $s(\vect{x}) = \frac{e^{\vect{x}}}{\vect{1}^\top e^{\vect{x}}}$ .While mini-batch reformulation will take the following form:
+
+\begin{equation}
+\nabla_\Theta f(\Theta) = -\frac{1}{n} \sum_{i=1}^s X_i\left(Y_i - s(\Theta^\top X_i^\top)\right)^\top,
+\end{equation}
+
+where $s(X) = \left[\begin{array}{cccc}| & | & | & | \\
+s(\vect{x}_{(1)}) & s(\vect{x}_{(2)}) & \cdots & s(\vect{x}_{(b)}) \\
+| & | & | & |
+\end{array}\right]$ is a column-wise softmax function
+
 
 %================================================
 % Results
@@ -506,7 +534,17 @@ To sum it up, we need to solve \eqref{strang:logreg_eta_ode} (which is much simp
 
 \section{Results}
 \subsection{Iteration comparison}
+
+\subsubsection{Linear Least Squares}
+\subsubsection{Binary Logistic Regression}
+\subsubsection{Softmax Regression}
+
 \subsection{Time comparison}
+
+\subsubsection{Linear Least Squares}
+\subsubsection{Binary Logistic Regression}
+\subsubsection{Softmax Regression}
+
 \subsection{Robustness to stepsize choosing}
 
 \subsubsection{Linear Least Squares}
@@ -552,6 +590,8 @@ To sum it up, we need to solve \eqref{strang:logreg_eta_ode} (which is much simp
 \end{center}
 \vskip -0.2in
 \end{figure}
+
+\subsubsection{Softmax Regression}
 
 %================================================
 % Related work
