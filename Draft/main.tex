@@ -519,13 +519,41 @@ where $e^{\vect{x}}$ is element-wise exponential function, while $ \vect{y_i} \i
 Here we use $s(\vect{x})$ as a softmax function of a vector $\vect{x}$, i.e. $s(\vect{x}) = \frac{e^{\vect{x}}}{\vect{1}^\top e^{\vect{x}}}$ .While mini-batch reformulation will take the following form:
 
 \begin{equation}
-\nabla_\Theta f(\Theta) = -\frac{1}{n} \sum_{i=1}^s X_i\left(Y_i - s(\Theta^\top X_i^\top)\right)^\top,
+\nabla_\Theta f(\Theta) = -\frac{1}{n} \sum_{i=1}^s X_i^\top\left(Y_i - s(\Theta^\top X_i^\top)\right)^\top,
 \end{equation}
 
 where $s(X) = \left[\begin{array}{cccc}| & | & | & | \\
 s(\vect{x}_{(1)}) & s(\vect{x}_{(2)}) & \cdots & s(\vect{x}_{(b)}) \\
 | & | & | & |
-\end{array}\right]$ is a column-wise softmax function
+\end{array}\right]$ is a column-wise softmax function. Indeed, in a very similar manner to the binary logistic regression we can write down gradientflow ODE for softmax regression in a mini-batch form:
+
+\begin{equation}
+\frac{d \Theta}{d t} = - \frac{1}{n} \sum_{i=1}^s X_i^\top\left(s(\Theta^\top X_i^\top) - Y_i \right)^\top
+\end{equation}
+
+Splitting method requires the local problem, which is focused on a single minibatch:
+
+\begin{equation}
+\frac{d \Theta}{d t} = - \frac{1}{n} X_i^\top\left(s(\Theta^\top X_i^\top) - Y_i \right)^\top
+\end{equation}
+
+\begin{align}
+\nonumber (I - Q_iQ_i^\top)\frac{d \Theta}{d t} &= (I - Q_iQ_i^\top) \frac{1}{n} X_i^\top(Y_i -s(\Theta^\top X_i^\top))^\top \\
+\nonumber \frac{d \Theta}{d t} &= Q_i\frac{d (Q_i^\top\Theta)}{d t} \quad Q_i^\top \Theta = H_i \\ 
+\nonumber \frac{d \Theta}{d t} &= Q_i\frac{d H_i }{d t} \quad \text{integrate from $0$ to $h$}\\ 
+\label{strang:softmax_theta_from_eta}\Theta(h) &= Q_i \left(H_i (h) - H_i (0) \right) + \Theta_0
+\end{align}
+
+On the other hand:
+\begin{align}\nonumber
+\frac{d H_i }{d t} &= Q_i^\top\frac{d \Theta}{d t} =  - \frac{1}{n} Q_i^\top  X_i^\top(s(\Theta^\top X_i^\top) - Y_i)^\top = \\ 
+\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i(s(\Theta^\top X_i^\top) - Y_i)^\top =\\
+\nonumber&= - \frac{1}{n} R_i(s(\Theta^\top X_i^\top) - Y_i)^\top =\\
+\nonumber&= - \frac{1}{n} R_i(s(H_i^\top R) - Y_i)^\top 
+\end{align}
+
+Now we need to solve ODE of variable of the size $b \times k$, rather, than $p \times k$.
+% Теперь надо написать про то, что для каждого класса решается свой диффур и расписать по ним расщепление.
 
 
 %================================================
