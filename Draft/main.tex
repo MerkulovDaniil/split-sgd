@@ -1,18 +1,14 @@
 \documentclass{article}
-
-% Recommended, but optional, packages for figures and better typesetting:
 \usepackage{microtype}
 \usepackage{graphicx}
-\usepackage{subfigure}
-\usepackage{booktabs} % for professional tables
-
-% hyperref makes hyperlinks in the resulting PDF.
-% If your build breaks (sometimes temporarily if a hyperlink spans a page)
-% please comment out the following usepackage line and replace
-% \usepackage{icml2020} with \usepackage[nohyperref]{icml2020} above.
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{iclr2020_conference, times}
+\iclrfinalcopy
 \usepackage{hyperref}
 \graphicspath{{figures/}}
 \usepackage{amsmath,amsthm,amssymb}
+\usepackage{thmtools, thm-restate}
 \newtheorem{theorem}{Theorem}
 \newtheorem{lemma}{Lemma}
 \usepackage{bm}
@@ -20,69 +16,24 @@
 
 % Attempt to make hyperref and algorithmic work together better:
 \newcommand{\theHalgorithm}{\arabic{algorithm}}
-
-% Use the following line for the initial blind version submitted for review:
-\usepackage{icml2020}
-
-% If accepted, instead use the following line for the camera-ready submission:
-% \usepackage[accepted]{icml2020}
-
-
-% The \icmltitle you define below is probably too long as a header.
-% Therefore, a short form for the running title is supplied here:
-\icmltitlerunning{Submission and Formatting Instructions for ICML 2020}
+\usepackage[ruled,vlined]{algorithm2e}
 
 \begin{document}
 
-\twocolumn[
-\icmltitle{On the connection between stochastic optimization and splitting scheme for ODE.}
+\title{Stochastic gradient algorithms from ODE splitting perspective}
 
-% It is OKAY to include author information, even for blind
-% submissions: the style file will automatically remove it for you
-% unless you've provided the [accepted] option to the icml2020
-% package.
+\author{Daniil Merkulov \& Ivan Oseledets \\
+Center for Computational and Data-Intensive Science and Engineering\\
+Skolkovo Institute of Science and Technology\\
+Bolshoy Boulevard 30, bld. 1, Moscow, Russia, 121205 \\
+\texttt{daniil.merkulov@skolkovotech.ru, i.oseledets@skoltech.ru}
+}
 
-% List of affiliations: The first argument should be a (short)
-% identifier you will use later to specify author affiliations
-% Academic affiliations should list Department, University, City, Region, Country
-% Industry affiliations should list Company, City, Region, Country
+\maketitle
 
-% You can specify symbols, otherwise they are numbered in order.
-% Ideally, you should not use this facility. Affiliations will be numbered
-% in order of appearance and this is the preferred way.
-\icmlsetsymbol{equal}{*}
-
-\begin{icmlauthorlist}
-\icmlauthor{Daniil Merkulov}{sk}
-\icmlauthor{Ivan Oseledets}{sk}
-\end{icmlauthorlist}
-
-\icmlaffiliation{sk}{Center for Computational and Data-Intensive Science and Engineering, Skolkovo Institute of Science and Technology, Moscow, Russia}
-
-\icmlcorrespondingauthor{Daniil Merkulov}{daniil.merkulov@skoltech.ru}
-\icmlcorrespondingauthor{Ivan Oseledets}{i.oseledets@skoltech.ru}
-
-% You may provide any keywords that you
-% find helpful for describing your paper; these are used to populate
-% the "keywords" metadata in the PDF but will not be shown in the document
-\icmlkeywords{Stochastic gradient descent, ordinary differential equations, splitting scheme, Kaczmarz method, Optimization}
-
-\vskip 0.3in
-]
-
-% this must go after the closing bracket ] following \twocolumn[ ...
-
-% This command actually creates the footnote in the first column
-% listing the affiliations and the copyright notice.
-% The command takes one argument, which is text to display at the start of the footnote.
-% The \icmlEqualContribution command is standard text for equal contribution.
-% Remove it (just {}) if you do not need this facility.
-
-\printAffiliationsAndNotice{}  % leave blank if no need to mention equal contribution
-% \printAffiliationsAndNotice{\icmlEqualContribution} % otherwise use the standard text.
 
 \begin{abstract}
-We present different view on stochastic optimization, which goes back to the splitting schemes for approximate solutions of ODE. In this work we provide a connection between stochastic gradient descent approach and first order splitting scheme for ODE. We present, that the Kaczmarz method is the limit case of the splitting scheme for unitary batch SGD linear least squares approach. We support our findings with empirical tests.
+We present a different view on stochastic optimization, which goes back to the splitting schemes for approximate solutions of ODE. In this work, we provide a connection between stochastic gradient descent approach and first-order splitting scheme for ODE. We consider the special case of splitting, which is inspired by machine learning applications and derive a new upper bound on the global splitting error for it. We present, that the Kaczmarz method is the limit case of the splitting scheme for the unit batch SGD for linear least squares problem. We support our findings with systematic empirical studies, which demonstrates, that a more accurate solution of local problems leads to the stepsize robustness and provides better convergence in time and iterations on the softmax regression problem.
 \end{abstract}
 
 \section{Introduction}
@@ -90,24 +41,23 @@ A lot of practical problems arising in machine learning require minimization of 
 \begin{equation}\label{strang:finitesum}
     f(\vect{\vect{\theta}}) = \frac{1}{n} \sum_{i=1}^n f_i(\vect{\vect{\theta}}) \rightarrow \min_{\vect{\vect{\theta}} \in \mathbb{R}^p},
 \end{equation}
-where the sum goes over the \emph{minibatches} of the original dataset. Vanilla stochastic gradient descent (SGD) method \cite{robbins1951stochastic} consists sequential steps in the direction of the gradient of $f_i(\vect{\theta})$, where $i$ is to be chosen randomly from $1$ to $n$ without replacement.
+where the sum goes over the \emph{minibatches} of the original dataset. Vanilla stochastic gradient descent
+(SGD) method \cite{robbins1951stochastic} consists sequential steps in the direction of the gradient of $f_i(\vect{\theta})$, where $i$ is to be chosen randomly from $1$ to $n$ without replacement.
 \begin{equation}
 \vect{\theta}_{k+1} = \vect{\theta}_{k} - h_{k} \nabla f_i.
 \end{equation}
-Gradient descent method can be considered as an Euler discretization of the ordinary differential equation (ODE) of the form of the gradient flow
+Gradient descent method \cite{cauchy1847methode} can be considered as an Euler discretization of the ordinary
+differential equation (ODE) of the form of the gradient flow
 \begin{equation}\label{strang:euler}
     \frac{d \vect{\theta}}{d t} = -\nabla f(\vect{\theta}).
 \end{equation}
-In continuous time, SGD if often analyzed by introducing a noise into the right-hand side of \eqref{strang:euler}. However, for real dataset the distribution of the noise obtained by replacing the full gradient by its minibatch variant is not known and can be different for different problems. Instead, we propose a new view on the SGD as a \emph{first-order splitting scheme} for \eqref{strang:euler}, thus shedding a new light on SGD-type algorithms. This representation allows to use more efficient splitting schemes for the approximation of the full gradient flow. We show, that second-order Marchuk/Strang splitting scheme (\cite{marchuk1968some}, \cite{strang1968construction}) provides faster convergence 
-
-% We'll leave SAG for a moment.. Moreover, we interpret stochastic average gradient (SAG)\cite{schmidt2017minimizing} approach as the \emph{splitting scheme with rebalancing} of the SAG method, which we call \emph{SAG2} method. In implementation, the second-order scheme consists in a sequential processing of minibatches first from $1$ to $m$, and then from $m$ to $1$, i.e. a single iteration of SAG2 has the same cost as two iterations of SAG.
+In continuous time, SGD if often analyzed by introducing noise into the right-hand side of \eqref{strang:euler}. However, for a real dataset, the distribution of the noise obtained by replacing the full gradient by its minibatch variant is not known and can be different for different problems. Instead, we propose a new view on the SGD as a \emph{first-order splitting scheme} for \eqref{strang:euler}, thus shedding a new light on SGD-type algorithms. This representation allows using more efficient local problem solvers for the approximation of the full gradient flow.
 
 \textbf{Contributions}
 \begin{itemize}
-    \item We show, that vanilla SGD could be considered as a splitting scheme for a full gradient flow.
-    \item We demonstrate the connection between rebalancing splitting and stochastic average gradient method.
-    \item We propose new optimization method, SAG2 based on second order splitting scheme and show that it gives better convergence, than the standard SAG method.
-    % Перспективные вещи - аналитическая связь размера батча и величины шага, устойчивость к шагу
+    \item We show, that vanilla SGD could be considered as a splitting scheme for a full gradient flow and highlight connection between learning rate, batch size and size of the approximation step of SGD in continuous time.
+    \item  We propose new optimization scheme, which uses numerical integration of simple ODE at each step instead of stochastic gradient calculation and show empirically, that such approach can be considered as a stepsize-robust alternative to SGD for some practical ML problems.
+    \item We present, that the Kaczmarz method is the limit case of the splitting scheme for the unit batch SGD for linear least squares problem.
 \end{itemize}
 
 %================================================
@@ -116,139 +66,296 @@ In continuous time, SGD if often analyzed by introducing a noise into the right-
 
 \section{SGD as a splitting scheme}
 
-We want to establish the connection between splitting scheme for ODE and stochastic optimization. In this section we firstly consider simple ODE, where we can apply splitting idea and corresponding minimization problem.
-
-\subsection{Splitting schemes for ODEs}
-The best example to start from is simple ODE with right-hand-side, consisting of two summands:
+We firstly consider simple ODE, where we can apply splitting idea and corresponding minimization problem. The best example to start from is simple ODE with right-hand-side, consisting of two summands:
 \begin{equation}
     \frac{d \vect{\theta}}{d t} = - \frac{1}{2} \left( g_1(\vect{\theta}) + g_2(\vect{\theta})\right)
     \label{strang:gradientflow}
 \end{equation}
-Suppose, we want to find the solution $\vect{\theta}(h)$ of \eqref{strang:gradientflow} via integrating it on the small timestep $h$. The first order splitting scheme defined by solving first:
-$$
-\frac{d \vect{\theta}}{d t} = - \frac{1}{2} g_1(\vect{\theta}), \quad \vect{\theta}(0) = \vect{\theta}_0
-$$
-with exact solution $\vect{\theta}_1(h)$ at the moment $h$ , followed by
-$$
-\frac{d \vect{\theta}}{d t} = - \frac{1}{2} g_2(\vect{\theta}), \quad \vect{\theta}(0) = \vect{\theta}_1(h)
-$$
-with exact solution $\vect{\theta}_2(h)$ at the moment $h$. Thus, the first order approximation could be written as a combinations of both solutions:
-$$
-\vect{\theta}^I(h) = \vect{\theta}_2(h) \circ \vect{\theta}_1(h) \circ \vect{\theta}_0,
-$$
-while the second order scheme takes 3 substeps:
-$$
-\vect{\theta}^{II}(h) = \vect{\theta}_1\left(\frac{h}{2}\right) \circ \vect{\theta}_2(h) \circ \vect{\theta}_1\left(\frac{h}{2}\right) \circ \vect{\theta}_0
-$$
-Order of scheme defines the degree of polynomial of $h$, up to which the true solution and approximation are coincide. The local error of both schemes is given by Baker - Campbell - Hausdorff formula (\cite{baker1901further}, \cite{campbell1896law}, \cite{hausdorff1906symbolische}) (see \cite{macnamara2016operator} for the details)
-\begin{equation}
-    \label{strang:lie_error}
-    \vect{\theta}^I(h) - \vect{\theta}(h) = \frac{h^2}{2} \left[g_{1}, g_{2}\right]  + \mathcal{O}(h^3),
-\end{equation}
-\begin{equation}
-    \label{strang:marchuk_error}
-    \begin{split}
-    &\vect{\theta}^{II}(h) - \vect{\theta}(h) =\\&= \frac{h^{3}}{24} \left([[g_1, g_2], g_1]+2[[g_1, g_2], g_2]\right)+\mathcal{O}\left(h^{4}\right)
-    \end{split}
-\end{equation}
+Suppose, we want to find the solution $\vect{\theta}(h)$ of \eqref{strang:gradientflow} via integrating it on the small timestep $h$. The first order splitting scheme defined by solving first $\frac{d \vect{\theta}}{d t} = - \frac{1}{2} g_1(\vect{\theta}), \quad \vect{\theta}(0) = \vect{\theta}_0$ with exact solution $\vect{\theta}_1(h)$ at the moment $h$, followed by $\frac{d \vect{\theta}}{d t} = - \frac{1}{2} g_2(\vect{\theta}), \quad \vect{\theta}(0) = \vect{\theta}_1(h)$ with exact solution $\vect{\theta}_2(h)$ at the moment $h$. Thus, the first order approximation could be written as a combinations of both solutions $\vect{\theta}^I(h) = \vect{\theta}_2(h) \circ \vect{\theta}_1(h) \circ \vect{\theta}_0$.
 
-where $\left[ g_1, g_2\right] = \frac{d g_1}{d \vect{\theta}} g_2 - \frac{d g_2}{d \vect{\theta}} g_1 $ stands for commutator of the vector fields $g_1$ and $g_2$. The $\vect{\theta}_0 = \vect{\theta}(0)$ for initial condition of original ODE.
-
-Note, that the basic idea of splitting could be also applied, when the number of terms in the right-hand side of ODE is greater, than two. In this case splitting scheme will take the following form:
-\begin{equation}\label{strang:marchuk}
-	\vect{\theta}^I(h) = \vect{\theta}_m(h) \circ \vect{\theta}_{m-1} \circ \ldots \circ \vect{\theta}_2(h) \circ \vect{\theta}_1(h) \circ \vect{\theta}_0
-\end{equation}
-\begin{equation}\label{strang:strang}
-\begin{split}
-	\vect{\theta}^{II}(h) = \vect{\theta}_1\left(\frac{h}{2}\right) \circ \vect{\theta}_2\left(\frac{h}{2}\right) \circ\ldots \vect{\theta}_m(h) \circ \ldots \\ \ldots \circ \vect{\theta}_2\left(\frac{h}{2}\right)  \circ \vect{\theta}_1\left(\frac{h}{2}\right) \circ \vect{\theta}_0
-\end{split}
-\end{equation}
-
-\subsection{SGD as approximation for the Gradient Flow equation}
-Now we consider classical SGD method as a splitting scheme for the full gradient descent (\cite{cauchy1847methode}). Suppose, we have the simplest ($m=2$) finite sum minimization problem:
-$$
-\min_{\vect{\theta} \in \mathbb{R}^n} \frac{1}{m}\sum\limits_{i=1}^m f_i(\vect{\theta}) = \min_{\vect{\theta} \in \mathbb{R}^n} \frac{1}{2} \left( f_1(\vect{\theta}) + f_2(\vect{\theta})\right)
-$$
-Let us denote by $g_i^k = \nabla f_i(\vect{\theta}_k)$, than, the vanilla gradient descent will be written as
-$$
-\vect{\theta}_{k+1} = \vect{\theta}_k - h\cdot\frac{1}{2} \left( g^k_1 + g^k_2\right),
-$$
-while SGD version will take steps iteratively over minibatch gradient directions:
-\begin{align*}\label{strang:sgd2}
-\vect{\theta}_{k+1} &= \vect{\theta}_k - h\cdot g^k_1 \\
-\vect{\theta}_{k+2} &= \vect{\theta}_{k+1} - h\cdot  g^{k+1}_2
-\end{align*}
-These two iterations forms an epoch in SGD approach. Each of the substeps can be considered as a forward Euler method for the discretization of the ODE for a timestep $h$
-\begin{align*}
-    \frac{d \vect{\theta}^I}{d t} = -g_1, \quad \vect{\theta}^I(0) = \vect{\theta}_{k},\\
-    \frac{d \vect{\theta}^{II}}{d t} = -g_2, \quad \vect{\theta}^{II}(0) = \vect{\theta}^{I}(h),
-\end{align*}
-therefore the final result for a sufficiently small $h$ approximates the gradient flow for at time $t + h$. The vanilla gradient descent, however, is only approximating the gradient flow at time $t + h/2$. For larger number of minibatches, rather then the GD flow. One can notice, that in SGD we use a very simple time integration inside the substep. In some cases, we can integrate the subproblem exactly, without using forward Euler scheme. Generalized linear models are among such problems, but we will first study the linear least squares case in more details, since in this case we can obtain non-trivial error bounds.
-
-\subsection{Splitting approximation for the Gradient Flow equation}
-
-It is interesting to look how the pure splitting scheme corresponds to the SGD approach. For this purpose we consider illustrative example of Gradient Flow equation \ref{strang:simple_GF}, where the right-hand side of ODE is just the sum of operators acting on $\vect{\theta}$, which allows us to apply splitting scheme approximation directly.
+It is interesting to study how the pure splitting scheme \cite{marchuk1968some,strang1968construction} corresponds to the SGD approach. For this purpose, we consider an illustrative example of Gradient Flow equation \ref{strang:simple_GF}, where the right-hand side of ODE is just the sum of operators acting on $\vect{\theta}$, which allows us to apply splitting scheme approximation directly.
 \begin{equation}
 \label{strang:simple_GF}
 \frac{d \vect{\theta}}{d t} = -\frac{1}{2} \sum\limits_{i=1}^2 \nabla f_i (\vect{\theta}) = - \frac{1}{2} \nabla f_1 (\vect{\theta}) -\frac{1}{2}  \nabla f_2 (\vect{\theta})
 \end{equation}
-
-In order to establish the connection between splitting scheme and SGD we use the Euler discretization below:
-
-\begin{align*}
-% \label{strang:simple_GF_splitting}
-&\qquad\text{Splitting step} &\text{Euler discretization} \\
-&\frac{d \vect{\theta}}{d t} = -\frac{1}{2}\nabla f_1(\vect{\theta}) &\tilde{\vect{\theta}}_{I} = \vect{\theta}_0 - \frac{h}{2}\nabla f_1 (\vect{\theta}_0) \\
-&\frac{d \vect{\theta}}{d t} = -\frac{1}{2}\nabla f_2(\vect{\theta}) &\vect{\theta}_{I} = \tilde{\vect{\theta}}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\vect{\theta}}_{I})
-\end{align*}
-
-
-\begin{align*}
-% \label{strang:simple_GF_splitting}
-&\qquad\text{SGD epoch} &\text{First order splitting} \\
-&\tilde{\vect{\theta}}_{SGD} = \vect{\theta}_0 - h \nabla f_1 (\vect{\theta}_0) &\tilde{\vect{\theta}}_{I} = \vect{\theta}_0 - \frac{h}{2}\nabla f_1 (\vect{\theta}_0) \\
-&\vect{\theta}_{SGD} = \tilde{\vect{\theta}}_{SGD} - h \nabla f_2 (\tilde{\vect{\theta}}_{SGD}) &\vect{\theta}_{I} = \tilde{\vect{\theta}}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\vect{\theta}}_{I})
-\end{align*}
+\begin{table}[h!]
+\caption{The table describes the correspondence between splitting scheme for discretized Gradient Flow ODE and epoch of SGD}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{cccc}
+\toprule
+\textbf{Splitting step} & \textbf{Euler discretization} & \textbf{SGD Epoch} & \textbf{First-order splitting} \\
+\midrule
+$\frac{d \vect{\theta}}{d t} = -\frac{1}{2}\nabla f_1(\vect{\theta})$ & $\tilde{\vect{\theta}}_{I} = \vect{\theta}_0 - \frac{h}{2}\nabla f_1 (\vect{\theta}_0) $&$\tilde{\vect{\theta}}_{SGD} = \vect{\theta}_0 - h \nabla f_1 (\vect{\theta}_0) $&$\tilde{\vect{\theta}}_{I} = \vect{\theta}_0 - \frac{h}{2}\nabla f_1 (\vect{\theta}_0)$ \\
+$\frac{d \vect{\theta}}{d t} = -\frac{1}{2}\nabla f_2(\vect{\theta}) $&$\vect{\theta}_{I} = \tilde{\vect{\theta}}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\vect{\theta}}_{I}) $&$\vect{\theta}_{SGD} = \tilde{\vect{\theta}}_{SGD} - h \nabla f_2 (\tilde{\vect{\theta}}_{SGD}) $&$\vect{\theta}_{I} = \tilde{\vect{\theta}}_{I} - \frac{h}{2}\nabla f_2 (\tilde{\vect{\theta}}_{I})$ \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
 
 Thus, we can conclude, that \textit{one epoch of SGD is just the splitting scheme for the discretized Gradient Flow ODE with $2 \cdot h$ step size ($m \cdot h$ in case of $m$ batches)}
 
-This idea gives additional intuition on the method. Both approaches are solving local problems through the Euler discretization. Given an information about the Euler scheme limitation, why not solve these local problems more accurate? While Euler's scheme is first order accurate, there is no point in using higher order splitting scheme's in such setting. Therefore, total error is defined by the accuracy of splitting and local problem integration. We should improve them both to achieve gain.
+Indeed, in SGD we go in the direction of the batch gradient, which stands for the Euler discretization of batch gradient flow ODE or \emph{local ODE}. This idea gives additional intuition on the method. Given information about the Euler scheme limitation (first-order accuracy, stability issues), we propose to solve each local problem more precisely.
 
-%================================================
-% Applications
-%================================================
+\section{Optimization step with ODE solver}
 
-\section{Applications}
-\subsection{Linear least squares}
-\subsubsection{Problem}
-Let $f_i(\vect{\theta}) = \Vert \vect{x_i}^{\top} \vect{\theta} - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
-\begin{equation}\label{strang:LLS}
-   f(\vect{\theta}) = \frac{1}{n}\Vert X \vect{\theta} - \vect{y} \Vert_2^2  = \frac{1}{n}\sum\limits_{i=1}^s\Vert X_i \vect{\theta} - \vect{y_i} \Vert_2^2\to \min_{\vect{\theta} \in \mathbb{R}^p},
-\end{equation}
-where $X \in \mathbb{R}^{n \times p}$ and $\vect{y} \in \mathbb{R}^p$ and the second part of the equation stands for $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, \vect{y_i} \in \mathbb{R}^{b}$
+We propose to integrate local problem more precisely instead of Euler step in SGD. Solution of the local ODE problem involves replacing gradient in the right-hand side of gradient flow ODE \ref{strang:gradientflow} with batch gradient version. In our experiments the explicit Runge-Kutta method \cite{dormand1980family,shampine1986some} was used via scipy \cite{2020SciPy-NMeth} function odeint.
 
-\begin{equation}\label{strang:LLS_grad}
-\nabla_\theta f(\vect{\theta}) = \nabla f(\vect{\theta}) = \frac{1}{n}\sum\limits_{i=1}^s X_i^\top(X_i \vect{\theta} - \vect{y_i})
-\end{equation}
+\begin{table}[h!]
+\caption{The table presents ODE, which we need to solve at each step of the algorithm. The last column shows the ODE, which is needed to be solved at each iteration of the algorithm for each given problem.}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{cccc}
+\toprule
+\textbf{Problem} & \textbf{Loss function} & \textbf{Batch gradient} & \textbf{Initial local ODE} \\
+\midrule
+Linear Least Squares & $f(\vect{\theta}) = \frac{1}{n}\sum\limits_{i=1}^m\Vert X_i \vect{\theta} - \vect{y_i} \Vert_2^2$ & $\frac{1}{b}X_i^\top( X_i \vect{\theta} - \vect{y_i})$ & $\frac{d \vect{\theta}}{d t} = - \frac{1}{n} X_i^\top( X_i \vect{\theta} - \vect{y_i})$ \\
+Binary logistic regression & $\begin{aligned}f(\vect{\theta}) = -\frac{1}{n} \sum_{i=1}^n\left(y_i \ln \sigma(\vect{\theta}^\top\vect{x_i})  \right.&+ \\ \left.+ (1-y_i) \ln \left(1-\sigma(\vect{\theta}^\top\vect{x_i})\right)\right)&\end{aligned}$ & $\frac{1}{b}X_i^\top\left( \sigma\left(X_i \vect{\theta}\right) - \vect{y_i}\right)$ & $\frac{d \vect{\theta}}{d t} = - \frac{1}{n} X_i^\top\left( \sigma\left(X_i \vect{\theta}\right) - \vect{y_i}\right)$ \\
+One FC Layer + softmax & $f(\Theta) = 
+-\frac{1}{n} \sum\limits_{i=1}^n\log\left(\frac{\vect{y_i}^\top e^{\Theta^\top \vect{x_i}}}{\vect{1}^\top e^{\Theta^\top \vect{x_i}}}\right)$ & $ \frac{1}{b} X_i^\top\left(s(\Theta^\top X_i^\top) - Y_i \right)^\top$ & $\frac{d \Theta}{d t} = - \frac{1}{n} X_i^\top\left(s(\Theta^\top X_i^\top) - Y_i \right)^\top$\\
+\bottomrule
+\end{tabular}
+}
+\end{table}
 
-The gradient flow equation will be written as follows:
-\begin{equation}\label{strang:LLS_GF}
-\frac{d \vect{\theta}}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \vect{\theta} - \vect{y_i})
-\end{equation}
+\begin{algorithm}[h!]
+\SetAlgoLined
+$\vect{\theta}_0$ - initial parameter; $b$ - batch size; $\alpha$ - learning rate; $m$- total number of batches
 
-\subsubsection{Exact solution of the local problem}
-On each splitting approximation step we need to solve the local problem:
-\begin{equation}\label{strang:LLS_local_problem}
-\frac{d \vect{\theta}}{d t} = - \frac{1}{n}X_i^\top(X_i \vect{\theta} - \vect{y_i})
-\end{equation}
-\begin{theorem}\label{strang:LLS_local_solution} For any matrix $\vect{x_i} \in \mathbb{R}^{b \times p}$, any vector of right-hand side $\vect{y_i} \in \mathbb{R}^{b}$ and initial vector of parameters $\vect{\theta}_0$, there is a solution of the ODE in \eqref{strang:LLS_local_problem}, given by formula:
+$h := \alpha m$
+
+$t := 0$
+
+\For{$k = 0,1, \ldots$}{
+    \For{$i = 1,2, \ldots, m$}{
+        Formulate local ODE problem $\mathcal{P}_i^k$
+
+        $\vect{\theta}_{t+1} = $ integrate $\mathcal{P}_i^k$ given an initial value $\vect{\theta}(0) = \vect{\theta}_t$ to the step h
+
+        $t := t+1$ 
+        }
+    }
+\caption{Splitting optimization}
+\end{algorithm}
+
+Typical machine learning problems involves dealing with mini-batch of size $b$, which is often less, than the number of trainable parameters $p$, which allows us to reduce dimensionality of the dynamic system via $QR$ decomposition of each batch data matrix $X_i^\top = Q_i R_i$ (see details in the Appendix) and substitution $\vect{\eta}_i = Q_i^\top \vect{\theta}$. Note, that $QR$ decomposition is only needed to be performed once before the training.
+
+\begin{table}[h!]
+\caption{The table shows initial local ODE and paired $\mathcal{P}_i^k$. Note, that $\vect{\eta}_i \in \mathbb{R}^b$ , while $\vect{\theta} \in \mathbb{R}^p$}
+\resizebox{\textwidth}{!}{
+\begin{tabular}{llc}
+\toprule
+\multicolumn{1}{c}{\textbf{Initial local ODE}} & \multicolumn{1}{c}{$\mathcal{P}_i^k$} & \textbf{Integration} \\
+\midrule
+$\frac{d \vect{\theta}}{d t} = - \frac{1}{n} X_i^\top( X_i \vect{\theta} - \vect{y_i})$ & $\frac{d \vect{\eta_i}}{d t} = - \frac{1}{n} R_i\left(R_i^\top \vect{\eta_i} - \vect{y_i}\right), \vect{\eta_i} = Q_i^\top\vect{\theta}$ & analytical \\
+$\frac{d \vect{\theta}}{d t} = - \frac{1}{n} X_i^\top\left( \sigma\left(X_i \vect{\theta}\right) - \vect{y_i}\right)$ & $\frac{d \vect{\eta_i}}{d t} = - \frac{1}{n} R_i\left(\sigma\left(R_i^\top \vect{\eta_i}\right) - \vect{y_i}\right), \vect{\eta_i} = Q_i^\top\vect{\theta}$ & \texttt{odeint} \\
+$\frac{d \Theta}{d t} = - \frac{1}{n} X_i^\top\left(s(\Theta^\top X_i^\top) - Y_i \right)^\top$ & $\frac{d H_i}{dt} = - \frac{1}{n} R_i(s(H_i^\top R) - Y_i)^\top, H_i = Q_i^\top \Theta $& \texttt{odeint} \\
+\bottomrule
+\end{tabular}
+}
+\end{table}
+
+There is an analytical solution for each local ODE in linear least squares case:
+
+\begin{restatable}{theorem}{llsls}\label{strang:LLS_local_solution} For any matrix $\vect{x_i} \in \mathbb{R}^{b \times p}, b \leq p, \text{rank}X_i = b$, any vector of right-hand side $\vect{y_i} \in \mathbb{R}^{b}$ and initial vector of parameters $\vect{\theta}_0$, there is a solution of the $\frac{d \vect{\theta}}{d t} = - \frac{1}{n} X_i^\top( X_i \vect{\theta} - \vect{y_i})$, given by formula:
 \begin{equation}\label{strang:LLS_local_solution_formula}
+\vect{\theta}(h) = Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0,
+\end{equation}
+where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ stands for the $QR$ decomposition of the matrix $\vect{X_i}^\top$, $\vect{X_i}^\top = Q_i R_i$.
+\end{restatable}
+
+It is interesting to mention, that the splitting approach immediately leads to the Kaczmarz \cite{kaczmarz1937method, strohmer2009randomized, gower2015randomized} method for solving linear system in the same setting with unit batch size.
+
+\begin{equation}
+\label{strang:splitting_limit_kaczmarz}
+\lim_{h \to \infty} \vect{\theta}(h) = \frac{\left(y_i - \vect{x_i}^\top\vect{\theta}_0 \right)}{\|\vect{x_i}\|^2} \vect{x_i} + \vect{\theta}_0,
+\end{equation}
+
+which is exact formula for Kaczmarz method for solving linear system. This result correlates with the statements of \cite{needell2014stochastic}, but provides us with a new sense of similarity between SGD and Kaczmarz method.
+
+%================================================
+% Results
+%================================================
+
+\section{Results}
+
+In this section, we describe the experimental setting. The majority of computations were performed on the NVIDIA DGX-2 cluster with 80 CPUs and 512 Gb RAM. We restricted the number of CPU usage per each experiment with an upper limit of 5 CPUs per experiment. All time measurements were done with the time library for Python. All experiments were done with the fixed random seed for reproducibility. For each experiment we performed 30 runs with random initialization and plotted trend line with the standard deviation.
+
+\textbf{Linear Least Squares}  Both random and the real linear systems were tested. For random linear system (\texttt{random lls}) we generated $10000\times500$ matrix with additive Gaussian noise of magnitude $0.01$. Presented figures correspond to the batch size equals to $20$. The real linear system (\texttt{tom lls}) is the standard tomography data from AIRTools II \cite{hansen2018air}. Solution of the linear system is the $50 \times 50$ image reconstructed from solving $12780 \times 2500$ linear system. Presented figures correspond to the batch size equals to $60$. Relative error $10^{-3}$ was used as the stopping criterion.
+
+\textbf{Binary Logistic Regression}  (\texttt{logreg}) In our experiments we used two classes from MNIST \cite{lecun1998gradient} dataset, which corresponds to the $0$ and $1$ digits. The size of the batch for presented figure is $50$. Test error $0.001$ was used as the stopping criterion.
+
+\textbf{Softmax Logistic Regression} (\texttt{softmax}) We took Fashion MNIST \cite{xiao2017fashion} dataset with $60000$ grayscale pictures from $10$ classes. Each example is $28 \times 28$ image. The size of the batch for presented figure is $64$. Test error $0.25$ was used as the stopping criterion.
+
+On the figures below we have two labels: \texttt{SGD} and \texttt{Splitting}, which stands for batch stochastic gradient descent and proposed algorithm. We use different constant learning rates to perform our experiments. All the learning rates tested for both algorithms. Lack of point of one algorithm on the graph means reaching the limit of iterations without achieving the termination rule.
+
+\begin{figure}[h!]
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{LLS_iter.pdf}
+            \caption{{\small \texttt{Random LLS}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{LLS_tom_iter.pdf}
+            \caption{{\small \texttt{Tom LLS}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{Logreg_iter.pdf}
+            \caption{{\small \texttt{LogReg}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{{Softmax_fashion_mnist_iter_err0.25}.pdf}
+            \caption{{\small \texttt{Softmax}}}
+    \end{subfigure}
+\end{figure}
+
+As it is expected, SGD diverges starting from some value of learning rate, which is specific for each problem. While we can see comparative robustness of the proposed splitting optimization approach.
+
+\begin{figure}[h!]
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{LLS_time.pdf}
+            \caption{{\small \texttt{Random LLS}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{LLS_tom_time.pdf}
+            \caption{{\small \texttt{Tom LLS}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{Logreg_time.pdf}
+            \caption{{\small \texttt{LogReg}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{{Softmax_fashion_mnist_time_err0.25}.pdf}
+            \caption{{\small \texttt{Softmax}}}
+    \end{subfigure}
+\end{figure}
+
+
+%================================================
+% Related work
+%================================================
+
+\section{Related work}
+In this work, we presented another point of view on the nature of stochasticity in the stochastic gradient algorithms. From this perspective, different splitting schemes yield different stochastic gradient algorithms. We focused on the first-order splitting scheme for ODE, which corresponds to the SGD with the constant learning rate. Given this tractable setting, we performed a systematic empirical study of the local problem integration influence on the quality of the approximation scheme in machine learning problems. While the question of using these ideas to make general-purpose optimizer remains open, splitting optimization approach showed itself quite robust to the hyperparameter tuning for particular practical problems. Appendix to the paper contains proofs of the theorems and a new global error upper bounds for the first-order splitting for the special case.
+In \cite{su2014differential}  authors introduced second order ODE, which is equivalent (in the limit sense) to the gradient descent with Nesterov momentum \cite{nesterov1983method}.  Generalization of these ideas was presented in \cite{wibisono2016variational} with an arbitrary polynomial acceleration using the same parameter in ODE. General overview of the interplay between continuous-time and discrete-time points of view on dynamical systems and iterative optimization methods is covered in \cite{helmke2012optimization}, \cite{evtushenko1994stable}
+
+%================================================
+% References
+%================================================
+
+\newpage
+{ \small
+\bibliography{biblio}}
+\bibliographystyle{iclr2020_conference}
+
+%================================================
+% APPENDIX
+%================================================
+
+\appendix
+
+%================================================
+% SPLITTING GLOBAL ERROR
+%================================================
+
+\section{Upper bound on the global splitting error}
+
+Suppose, that we have only two batches, and the problem \eqref{strang:LLS} is consistent, i.e. there exists an exact solution $\vect{\theta}_*$ such as $X \vect{\theta}_* = \vect{y}$. The GD flow has the form
+\begin{equation}\label{strang:model1}
 \begin{split}
-\vect{\theta}(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + \\ &+ Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0,
+    \frac{d \vect{\theta}}{d t} &= -X^{\top} (X \vect{\theta} - \vect{y}) = -X^{\top} X(\vect{\theta} - \vect{\theta}_*) =\\ &= -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\vect{\theta} - \vect{\theta}_*),
 \end{split}
 \end{equation}
-where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ stands for the $QR$ decomposition of the matrix $\vect{x_i}^\top$, $\vect{x_i}^\top = Q_i R_i$.
+i.e. the splitting scheme corresponds to a linear operator splitting
+
+\begin{equation*}
+A = A_1 + A_2, \; A = -X^{\top} X, \; A_i = -X^{\top}_i X_i, \; i = 1, 2.
+\end{equation*}
+
+Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\vect{\theta}_* = 0$,
+
+Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
+\begin{equation*}
+A_i = Q_i B_i Q^*_i,
+\end{equation*}
+where $Q_i$ is an $N \times r_i$ matrix with orthonormal columns.  The following Lemma gives the representation of the matrix exponents of such matrices.
+\begin{lemma}\label{strang:lemexp}
+Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
+\begin{equation}\label{strang:lrexp}
+    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
+\end{equation}
+\end{lemma}
+To prove \eqref{strang:lrexp} we note that
+\begin{equation*}
+\begin{split}
+e^{t A} &= \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} = \\ &= I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = \\ &= (I - QQ^*) + Q e^{t B} Q^*.
+\end{split}
+\end{equation*}
+
+\begin{lemma}
+    \label{strang:lemupper_2}
+    Let $A_1, A_2 \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_1} \leq p$ and $\operatorname{rank}{A_2} \leq p$. While the sum of those matrices has full rank, i.e. $A = A_1 + A_2, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
+
+    \begin{equation}\label{strang:lemupper}
+        \lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \|(I - Q_2Q_2^*)(I - Q_1Q_1^*)\|
+    \end{equation}
+\end{lemma}
+\begin{proof}
+    The proof is straightforward. We will use the low rank matrix exponential decomposition from the Lemma \ref{strang:lemexp}
+    $$
+    e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
+    $$
+    \begin{align*}
+    &\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \\ 
+    &= \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
+    &= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* + \\
+    &+  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| =\\&= \Pi_2 \Pi_1
+    \end{align*}
+    Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
+\end{proof}
+
+\begin{figure}[h!]
+    \begin{subfigure}[t]{0.49\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{upper_bound_2.pdf}
+            \caption{{\small Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}}
+            \label{strang:fig:upper_bound_2}
+    \end{subfigure}%
+    \hfill
+    \begin{subfigure}[t]{0.49\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{upper_bound_many.pdf}
+            \caption{{\small Global upper bound on the splitting scheme in case of $40$ summands in the right-hand side.}}
+            \label{strang:fig:upper_bound_many}
+    \end{subfigure}
+\end{figure}
+
+The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One can easily see significant difference between existing global upper bounds for that case \cite{sheng1994global} and derived upper bound.
+
+\begin{theorem}\label{strang:theorem_uppbound}
+    Let $A_1, A_2, \ldots, A_b \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_i} \leq p, \;\forall i = 1, \ldots, b$. While the sum of those matrices has full rank, i.e. $A = \sum\limits_{i=1}^b A_i, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
+
+    \begin{equation}\label{strang:global_error_upper_bound}
+        \lim_{t \to \infty}\| e^{A_bt} \cdot \ldots \cdot e^{A_1t} - e^{At}\| = \left\|\prod\limits_{i=1}^b \Pi_{b-i+1}\right\|,
+    \end{equation}
+    where $\Pi_i = I - Q_iQ_i^*$ and $A_i = Q_iB_iQ_i^*$ and $Q_i$ is a matrix with orthonormal columns. 
 \end{theorem}
+
+The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validity of the presented upper bound.
+
+
+%================================================
+% Proofs
+%================================================
+
+\section{Proofs}
+
+\llsls*
 
 \begin{proof}
 Given $X_i^\top = Q_i R_i$, we have $(I - Q_iQ_i^\top)X_i^\top = 0$. Note, that $Q_i$ is left unitary matrix, i.e. $Q_i^\top Q_i = I$. 
@@ -293,26 +400,69 @@ Using \eqref{strang:lls_theorem_theta_from_eta} we obtain the target formula
 \end{equation*}
 
 \end{proof}
-% In case of the linear right-hand side of an ODE it is easy to solve it analytically. Now let see how the splitting approximation itself depends on the step size $h$.
-% $$\vect{\theta}^{GD} (h) = e^{-Ah} \vect{\theta}, $$
-% and splitting gives
-% $$\vect{\theta}^{SGD}(h) = e^{-A_1 h} e^{-A_2 h} \vect{\theta}.$$
-% The error is bounded as
-% $$
-%  \Vert \vect{\theta}^{GD} (h) - \vect{\theta}^{SGD}(h) \Vert \leq  \Vert E_1(h) \Vert \Vert \vect{\theta} \Vert,
-% $$
-% where
-% \begin{equation}\label{strang:error}
-% E_1(t) = e^{A t} - e^{A_1 t} e^{A_2 t}.
-% \end{equation}
-% We need to bound the norm of the matrix $E_1(t)$ for all $h$, not only for small ones, i.e. we need global estimates. Such kind of estimates were obtained in \cite{sheng1994global} and have the form
-% \begin{equation}\label{strang:sheng}
-%     \Vert E(t) \Vert \leq \frac{t^2}{2} \Vert [ A_1, A_2] \Vert \max \{ e^{t \mu(A_1 + A_2}), e^{t(\mu(A_1) + \mu(A_2))}\},
-% \end{equation}
-% where $\mu(Z)$ is the largest eigenvalue of the matrix $\frac{Z+Z^*}{2},$ but in our case all matrices are symmetric, thus these are largest eigenvalues of the matrix. The estimate \eqref{strang:sheng} and its generalization to a larger number of summands is not very useful for us, since we will have matrices $\vect{x_i}$ that have fewer rows, than column, i.e. matrices $A_i$ will have zero eigenvalues, thus the the maximum term will be equal to $1$, and the upper bound will grow quadratically with $h$. In reality, the behaviour is very different, see Figure~\ref{strang:modelfig}. In this example, we took $N=p=2$, batch size $1$. It can be seen, that the true error reaches a plateu, whereas the upper bound is growing quadratically with $t$.
 
-% We will now prove a better upper bound, that takes into account  possible zero eigenvalues of the matrices $A_1$ and $A_2$.
+\begin{lemma}\label{strang:lemexp}
+Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
+\begin{equation}\label{strang:lrexp}
+    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
+\end{equation}
+\end{lemma}
+To prove \eqref{strang:lrexp} we note that
+\begin{equation*}
+\begin{split}
+e^{t A} &= \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} = \\ &= I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = \\ &= (I - QQ^*) + Q e^{t B} Q^*.
+\end{split}
+\end{equation*}
 
+\begin{lemma}
+    \label{strang:lemupper_2}
+    Let $A_1, A_2 \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_1} \leq p$ and $\operatorname{rank}{A_2} \leq p$. While the sum of those matrices has full rank, i.e. $A = A_1 + A_2, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
+
+    \begin{equation}\label{strang:lemupper}
+        \lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \|(I - Q_2Q_2^*)(I - Q_1Q_1^*)\|
+    \end{equation}
+\end{lemma}
+\begin{proof}
+    The proof is straightforward. We will use the low rank matrix exponential decomposition from the Lemma \ref{strang:lemexp}
+    $$
+    e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
+    $$
+    \begin{align*}
+    &\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \\ 
+    &= \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
+    &= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* + \\
+    &+  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| =\\&= \Pi_2 \Pi_1
+    \end{align*}
+    Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
+\end{proof}
+
+%================================================
+% Applications
+%================================================
+
+\section{Applications}
+\subsection{Linear least squares}
+\subsubsection{Problem}
+Let $f_i(\vect{\theta}) = \Vert \vect{x_i}^{\top} \vect{\theta} - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
+\begin{equation}\label{strang:LLS}
+   f(\vect{\theta}) = \frac{1}{n}\Vert X \vect{\theta} - \vect{y} \Vert_2^2  = \frac{1}{n}\sum\limits_{i=1}^s\Vert X_i \vect{\theta} - \vect{y_i} \Vert_2^2\to \min_{\vect{\theta} \in \mathbb{R}^p},
+\end{equation}
+where $X \in \mathbb{R}^{n \times p}$ and $\vect{y} \in \mathbb{R}^p$ and the second part of the equation stands for $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, \vect{y_i} \in \mathbb{R}^{b}$
+
+\begin{equation}\label{strang:LLS_grad}
+\nabla_\theta f(\vect{\theta}) = \nabla f(\vect{\theta}) = \frac{1}{n}\sum\limits_{i=1}^s X_i^\top(X_i \vect{\theta} - \vect{y_i})
+\end{equation}
+
+The gradient flow equation will be written as follows:
+\begin{equation}\label{strang:LLS_GF}
+\frac{d \vect{\theta}}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \vect{\theta} - \vect{y_i})
+\end{equation}
+
+\subsubsection{Exact solution of the local problem}
+Theorem \ref{strang:LLS_local_solution} gives us explicit formula for the local solution:
+$$
+\vect{\theta}(h) = Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0
+$$
 
 \subsubsection{Kaczmarz as the limit case of splitting}
 Kaczmarz method \cite{kaczmarz1937method}, \cite{strohmer2009randomized}, \cite{gower2015randomized} is a well-known iterative algorithm for solving linear systems
@@ -340,102 +490,6 @@ It can be easily seen, that:
 \lim_{h \to \infty} \vect{\theta}(h) = \frac{\left(y_i - \vect{x_i}^\top\vect{\theta}_0 \right)}{\|\vect{x_i}\|^2} \vect{x_i} + \vect{\theta}_0,
 \end{equation}
 which is exact formula for Kaczmarz method for solving linear system. This result correlates with the statements of \cite{needell2014stochastic}, but provides us with a new sense of similarity between SGD and Kaczmarz method.
-
-\subsubsection{Upper bound on the global splitting error}
-
-Suppose, that we have only two batches, and the problem \eqref{strang:LLS} is consistent, i.e. there exists an exact solution $\vect{\theta}_*$ such as $X \vect{\theta}_* = \vect{y}$. The GD flow has the form
-\begin{equation}\label{strang:model1}
-\begin{split}
-    \frac{d \vect{\theta}}{d t} &= -X^{\top} (X \vect{\theta} - \vect{y}) = -X^{\top} X(\vect{\theta} - \vect{\theta}_*) =\\ &= -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\vect{\theta} - \vect{\theta}_*),
-\end{split}
-\end{equation}
-i.e. the splitting scheme corresponds to a linear operator splitting
-
-\begin{equation*}
-A = A_1 + A_2, \; A = -X^{\top} X, \; A_i = -X^{\top}_i X_i, \; i = 1, 2.
-\end{equation*}
-
-Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\vect{\theta}_* = 0$,
-
-Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
-\begin{equation*}
-A_i = Q_i B_i Q^*_i,
-\end{equation*}
-where $Q_i$ is an $N \times r_i$ matrix with orthonormal columns.  The following Lemma gives the representation of the matrix exponents of such matrices.
-\begin{lemma}\label{strang:lemexp}
-Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
-\begin{equation}\label{strang:lrexp}
-    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
-\end{equation}
-\end{lemma}
-To prove \eqref{strang:lrexp} we note that
-\begin{equation*}
-\begin{split}
-e^{t A} &= \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} = \\ &= I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = \\ &= (I - QQ^*) + Q e^{t B} Q^*.
-\end{split}
-\end{equation*}
-
-\begin{lemma}
-	\label{strang:lemupper_2}
-	Let $A_1, A_2 \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_1} \leq p$ and $\operatorname{rank}{A_2} \leq p$. While the sum of those matrices has full rank, i.e. $A = A_1 + A_2, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
-
-	\begin{equation}\label{strang:lemupper}
-		\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \|(I - Q_2Q_2^*)(I - Q_1Q_1^*)\|
-	\end{equation}
-\end{lemma}
-\begin{proof}
-	The proof is straightforward. We will use the low rank matrix exponential decomposition from the Lemma \ref{strang:lemexp}
-	$$
-	e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
-	$$
-	\begin{align*}
-	&\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \\ 
-	&= \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
-	&= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* + \\
-	&+  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| =\\&= \Pi_2 \Pi_1
-	\end{align*}
-	Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
-\end{proof}
-
-\begin{figure}[ht]
-\vskip 0.2in
-\begin{center}
-\centerline{\includegraphics[width=\columnwidth]{upper_bound_2.pdf}}
-\caption{Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}
-\label{strang:fig:upper_bound_2}
-\end{center}
-\vskip -0.2in
-\end{figure}
-
-% \begin{figure}[h!]
-% 	\centering
-% 	\includegraphics[width=0.6\textwidth]{upper_bound_2.pdf}
-% 	\caption{Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}
-% 	\label{strang:fig:upper_bound_2}
-% \end{figure}
-
-The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One can easily see significant difference between existing global upper bounds for that case \cite{sheng1994global} and derived upper bound.
-
-\begin{theorem}\label{strang:theorem_uppbound}
-	Let $A_1, A_2, \ldots, A_b \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_i} \leq p, \;\forall i = 1, \ldots, b$. While the sum of those matrices has full rank, i.e. $A = \sum\limits_{i=1}^b A_i, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
-
-	\begin{equation}\label{strang:global_error_upper_bound}
-		\lim_{t \to \infty}\| e^{A_bt} \cdot \ldots \cdot e^{A_1t} - e^{At}\| = \left\|\prod\limits_{i=1}^b \Pi_{b-i+1}\right\|,
-	\end{equation}
-	where $\Pi_i = I - Q_iQ_i^*$ and $A_i = Q_iB_iQ_i^*$ and $Q_i$ is a matrix with orthonormal columns. 
-\end{theorem}
-
-The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validity of the presented upper bound.
-
-\begin{figure}[ht]
-\vskip 0.2in
-\begin{center}
-\centerline{\includegraphics[width=\columnwidth]{upper_bound_many.pdf}}
-\caption{Global upper bound on the splitting scheme in case of $40$ summands in the right-hand side.}
-\label{strang:fig:upper_bound_many}
-\end{center}
-\vskip -0.2in
-\end{figure}
 
 \subsection{Binary logistic regression}
 \subsubsection{Problem}
@@ -490,7 +544,7 @@ Recall, that each hypothesis function depends on linear function $\vect{x_i}^\to
 
 \begin{equation}
 \label{strang:logreg_eta_ode}
-\frac{d \vect{\eta_i}}{d t} = - \frac{1}{n} R_i\left(\sigma\left(R_i \vect{\eta_i}\right) - \vect{y_i}\right),
+\frac{d \vect{\eta_i}}{d t} = - \frac{1}{n} R_i\left(\sigma\left(R_i^\top \vect{\eta_i}\right) - \vect{y_i}\right),
 \end{equation}
 
 To sum it up, we need to solve \eqref{strang:logreg_eta_ode} (which is much simpler, than original differential equation \eqref{strang:LogReg_GF_local}), than substitute it to the
@@ -553,127 +607,5 @@ On the other hand:
 \end{align}
 
 Now we need to solve ODE of variable of the size $b \times k$, rather, than $p \times k$.
-% Теперь надо написать про то, что для каждого класса решается свой диффур и расписать по ним расщепление.
-
-
-%================================================
-% Results
-%============================={}===================
-
-\section{Results}
-\subsection{Iteration comparison}
-
-\subsubsection{Linear Least Squares}
-\subsubsection{Binary Logistic Regression}
-\subsubsection{Softmax Regression}
-
-\subsection{Time comparison}
-
-\subsubsection{Linear Least Squares}
-\subsubsection{Binary Logistic Regression}
-\subsubsection{Softmax Regression}
-
-\subsection{Robustness to stepsize choosing}
-
-\subsubsection{Linear Least Squares}
-
-\begin{figure}[ht]
-\vskip 0.2in
-\begin{center}
-\centerline{\includegraphics[width=\columnwidth]{sgd_split_iterations_lls.pdf}}
-\caption{Random linear system. Averaging on 30 runs.}
-\label{strang:fig:lls_step_iter}
-\end{center}
-\vskip -0.2in
-\end{figure}
-
-\begin{figure}[ht]
-\vskip 0.2in
-\begin{center}
-\centerline{\includegraphics[width=\columnwidth]{sgd_split_time_lls.pdf}}
-\caption{Random linear system. Averaging on 30 runs.}
-\label{strang:fig:lls_step_time}
-\end{center}
-\vskip -0.2in
-\end{figure}
-
-\subsubsection{Binary Logistic Regression}
-
-\begin{figure}[ht]
-\vskip 0.2in
-\begin{center}
-\centerline{\includegraphics[width=\columnwidth]{sgd_split_iterations_logreg.pdf}}
-\caption{MNIST 0,1. Binary logistic regression. Averaging on 30 runs}
-\label{strang:fig:logreg_step_iter}
-\end{center}
-\vskip -0.2in
-\end{figure}
-
-\begin{figure}[ht]
-\vskip 0.2in
-\begin{center}
-\centerline{\includegraphics[width=\columnwidth]{sgd_split_time_logreg.pdf}}
-\caption{MNIST 0,1. Binary logistic regression. Averaging on 30 runs}
-\label{strang:fig:logreg_step_time}
-\end{center}
-\vskip -0.2in
-\end{figure}
-
-\subsubsection{Softmax Regression}
-
-%================================================
-% Related work
-%================================================
-
-\section{Related work}
-
-In \cite{su2014differential} authors introduced second order ODE, which is equivalent (in the limit sense) to the gradient descent with Nesterov momentum \cite{nesterov1983method}. The paper contains both formal and intuitive derivation of the proposed ODE from the iterative method itself with analogous upper bounds for general convex optimization setting and closed form solution for quadratic function. Strongly convex and composite optimizations are also covered. Theoretical conclusions are supported by strong empirical results on the variety of test functions.
-
-Generalization of these ideas were presented in \cite{wibisono2016variational} with an arbitrary polynomial acceleration using the same parameter in ODE.
-
-Solution dynamics of the linear least squares problem was also studied in \cite{osher2016sparse} based on the linearized Bregman iteration.
-
-General overview of interplay between continuous-time and discrete-time point of views on dynamical systems and iterative optimization methods is covered in \cite{helmke2012optimization}, \cite{evtushenko1994stable}
-
-\newpage
-\bibliography{biblio}
-\bibliographystyle{icml2020}
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% DELETE THIS PART. DO NOT PLACE CONTENT AFTER THE REFERENCES!
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%================================================
-% Appendix
-%================================================
-
-\appendix
-\section{Proofs}
-\section{Additional graphs}
-
-
-\begin{figure}
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split0.001}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split0.006}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split0.036}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split0.22}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split7.7}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split1e+04}.pdf}
-\caption{Linear Least Squares, $X \in \mathbb{R}^{200 \times 1000}, b = 10$}
-\end{figure}
-
-
-\begin{figure}
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg0.001}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg0.0077}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg0.06}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg3.6}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg2.8e+01}.pdf} \\
-\includegraphics[width=0.85\textwidth]{{robustness_to_stepsize/sgd_split_logreg2.2e+02}.pdf}
-\caption{Binary logistic regression on 0 and 1 from MNIST dataset}
-\end{figure}
 
 \end{document}
