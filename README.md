@@ -1,6 +1,12 @@
-# Draft
-📜[.pdf](/Draft/main.pdf)
-# Experiments
+# Paper
+[`📜 .pdf`](/Draft/main.pdf)
+
+# Presentation
+[`📜 .pdf`](/Presentation/presentation.pdf)
+
+[`▶ video`](https://youtu.be/wKQNXreTDTE)
+
+# Code
 
 ## Upper bound impractice
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/MerkulovDaniil/split-sgd/blob/master/Code/Upper_bound_impractice.ipynb)
