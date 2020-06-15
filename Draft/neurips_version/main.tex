@@ -5,7 +5,7 @@
 % before loading neurips_2020
 
 % ready for submission
-\usepackage[preprint]{neurips_2020}
+\usepackage{neurips_2020}
 
 % to compile a preprint version, e.g., for submission to arXiv, add add the
 % [preprint] option:
@@ -89,6 +89,7 @@ In continuous time, SGD if often analyzed by introducing noise into the right-ha
     \item We show, that vanilla SGD could be considered as a splitting scheme for a full gradient flow and highlight connection between learning rate, batch size and size of the approximation step of SGD in continuous time.
     \item  We propose new optimization scheme, which uses numerical integration of simple ODE at each step instead of stochastic gradient calculation and show empirically, that such approach can be considered as a stepsize-robust alternative to SGD for some practical ML problems.
     \item We present, that the Kaczmarz method is the limit case of the splitting scheme for the unit batch SGD for linear least squares problem.
+    \item We propose new global splitting error upper bound, which is suitable for machine learning type of problems.
 \end{itemize}
 
 %================================================
@@ -145,6 +146,7 @@ One FC Layer + softmax & $f(\Theta) =
 \bottomrule
 \end{tabular}
 }
+\label{strang:table_problems}
 \end{table}
 
 \begin{algorithm}[h!]
@@ -184,297 +186,11 @@ $\frac{d \Theta}{d t} = - \frac{1}{n} X_i^\top\left(s(\Theta^\top X_i^\top) - Y_
 }
 \end{table}
 
-There is an analytical solution for each local ODE in linear least squares case:
 
-\begin{restatable}{theorem}{llsls}\label{strang:LLS_local_solution} For any matrix $\vect{x_i} \in \mathbb{R}^{b \times p}, b \leq p, \text{rank}X_i = b$, any vector of right-hand side $\vect{y_i} \in \mathbb{R}^{b}$ and initial vector of parameters $\vect{\theta}_0$, there is a solution of the $\frac{d \vect{\theta}}{d t} = - \frac{1}{n} X_i^\top( X_i \vect{\theta} - \vect{y_i})$, given by formula:
-\begin{equation}\label{strang:LLS_local_solution_formula}
-\vect{\theta}(h) = Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0,
-\end{equation}
-where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ stands for the $QR$ decomposition of the matrix $\vect{X_i}^\top$, $\vect{X_i}^\top = Q_i R_i$.
-\end{restatable}
-
-It is interesting to mention, that the splitting approach immediately leads to the Kaczmarz \citet{kaczmarz1937method, strohmer2009randomized, gower2015randomized} method for solving linear system in the same setting with unit batch size.
-
-\begin{equation}
-\label{strang:splitting_limit_kaczmarz}
-\lim_{h \to \infty} \vect{\theta}(h) = \frac{\left(y_i - \vect{x_i}^\top\vect{\theta}_0 \right)}{\|\vect{x_i}\|^2} \vect{x_i} + \vect{\theta}_0,
-\end{equation}
-
-which is exact formula for Kaczmarz method for solving linear system. This result correlates with the statements of \citet{needell2014stochastic}, but provides us with a new sense of similarity between SGD and Kaczmarz method.
-
-%================================================
-% Results
-%================================================
-
-\section{Results}
-
-In this section, we describe the experimental setting. The majority of computations were performed on the NVIDIA DGX-2 cluster with 80 CPUs and 512 Gb RAM. We restricted the number of CPU usage per each experiment with an upper limit of 5 CPUs per experiment. All time measurements were done with the time library for Python. All experiments were done with the fixed random seed for reproducibility. For each experiment we performed 30 runs with random initialization and plotted trend line with the standard deviation.
-
-\textbf{Linear Least Squares}  Both random and the real linear systems were tested. For random linear system (\texttt{random lls}) we generated $10000\times500$ matrix with additive Gaussian noise of magnitude $0.01$. Presented figures correspond to the batch size equals to $20$. The real linear system (\texttt{tom lls}) is the standard tomography data from AIRTools II \citet{hansen2018air}. Solution of the linear system is the $50 \times 50$ image reconstructed from solving $12780 \times 2500$ linear system. Presented figures correspond to the batch size equals to $60$. Relative error $10^{-3}$ was used as the stopping criterion.
-
-\textbf{Binary Logistic Regression}  (\texttt{logreg}) In our experiments we used two classes from MNIST \citet{lecun1998gradient} dataset, which corresponds to the $0$ and $1$ digits. The size of the batch for presented figure is $50$. Test error $0.001$ was used as the stopping criterion.
-
-\textbf{Softmax Logistic Regression} (\texttt{softmax}) We took Fashion MNIST \citet{xiao2017fashion} dataset with $60000$ grayscale pictures from $10$ classes. Each example is $28 \times 28$ image. The size of the batch for presented figure is $64$. Test error $0.25$ was used as the stopping criterion.
-
-On the figures below we have two labels: \texttt{SGD} and \texttt{Splitting}, which stands for batch stochastic gradient descent and proposed algorithm. We use different constant learning rates to perform our experiments. All the learning rates tested for both algorithms. Lack of point of one algorithm on the graph means reaching the limit of iterations without achieving the termination rule.
-
-\begin{figure}[h!]
-    \begin{subfigure}[b]{0.25\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{LLS_iter.pdf}
-            \caption{{\small \texttt{Random LLS}}}
-    \end{subfigure}%
-    \begin{subfigure}[b]{0.25\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{LLS_tom_iter.pdf}
-            \caption{{\small \texttt{Tom LLS}}}
-    \end{subfigure}%
-    \begin{subfigure}[b]{0.25\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{Logreg_iter.pdf}
-            \caption{{\small \texttt{LogReg}}}
-    \end{subfigure}%
-    \begin{subfigure}[b]{0.25\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{{Softmax_fashion_mnist_iter_err0.25}.pdf}
-            \caption{{\small \texttt{Softmax}}}
-    \end{subfigure}
-\end{figure}
-
-As it is expected, SGD diverges starting from some value of learning rate, which is specific for each problem. While we can see comparative robustness of the proposed splitting optimization approach.
-
-\begin{figure}[h!]
-    \begin{subfigure}[b]{0.25\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{LLS_time.pdf}
-            \caption{{\small \texttt{Random LLS}}}
-    \end{subfigure}%
-    \begin{subfigure}[b]{0.25\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{LLS_tom_time.pdf}
-            \caption{{\small \texttt{Tom LLS}}}
-    \end{subfigure}%
-    \begin{subfigure}[b]{0.25\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{Logreg_time.pdf}
-            \caption{{\small \texttt{LogReg}}}
-    \end{subfigure}%
-    \begin{subfigure}[b]{0.25\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{{Softmax_fashion_mnist_time_err0.25}.pdf}
-            \caption{{\small \texttt{Softmax}}}
-    \end{subfigure}
-\end{figure}
-
-
-%================================================
-% Related work
-%================================================
-
-\section{Related work}
-In this work, we presented another point of view on the nature of stochasticity in the stochastic gradient algorithms. From this perspective, different splitting schemes yield different stochastic gradient algorithms. We focused on the first-order splitting scheme for ODE, which corresponds to the SGD with the constant learning rate. Given this tractable setting, we performed a systematic empirical study of the local problem integration influence on the quality of the approximation scheme in machine learning problems. While the question of using these ideas to make general-purpose optimizer remains open, splitting optimization approach showed itself quite robust to the hyperparameter tuning for particular practical problems. Appendix to the paper contains proofs of the theorems and a new global error upper bounds for the first-order splitting for the special case.
-In \citet{su2014differential}  authors introduced second order ODE, which is equivalent (in the limit sense) to the gradient descent with Nesterov momentum \citet{nesterov1983method}.  Generalization of these ideas was presented in \citet{wibisono2016variational} with an arbitrary polynomial acceleration using the same parameter in ODE. General overview of the interplay between continuous-time and discrete-time points of view on dynamical systems and iterative optimization methods is covered in \citet{helmke2012optimization}, \citet{evtushenko1994stable}
-
-%================================================
-% References
-%================================================
-
-\newpage
-{ \small
-\bibliography{biblio}}
-
-%================================================
-% APPENDIX
-%================================================
-
-\appendix
-
-%================================================
-% SPLITTING GLOBAL ERROR
-%================================================
-
-\section{Upper bound on the global splitting error}
-
-Suppose, that we have only two batches, and the problem \eqref{strang:LLS} is consistent, i.e. there exists an exact solution $\vect{\theta}_*$ such as $X \vect{\theta}_* = \vect{y}$. The GD flow has the form
-\begin{equation}\label{strang:model1}
-\begin{split}
-    \frac{d \vect{\theta}}{d t} &= -X^{\top} (X \vect{\theta} - \vect{y}) = -X^{\top} X(\vect{\theta} - \vect{\theta}_*) =\\ &= -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\vect{\theta} - \vect{\theta}_*),
-\end{split}
-\end{equation}
-i.e. the splitting scheme corresponds to a linear operator splitting
-
-\begin{equation*}
-A = A_1 + A_2, \; A = -X^{\top} X, \; A_i = -X^{\top}_i X_i, \; i = 1, 2.
-\end{equation*}
-
-Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\vect{\theta}_* = 0$,
-
-Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
-\begin{equation*}
-A_i = Q_i B_i Q^*_i,
-\end{equation*}
-where $Q_i$ is an $N \times r_i$ matrix with orthonormal columns.  The following Lemma gives the representation of the matrix exponents of such matrices.
-\begin{lemma}\label{strang:lemexp}
-Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
-\begin{equation}\label{strang:lrexp}
-    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
-\end{equation}
-\end{lemma}
-To prove \eqref{strang:lrexp} we note that
-\begin{equation*}
-\begin{split}
-e^{t A} &= \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} = \\ &= I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = \\ &= (I - QQ^*) + Q e^{t B} Q^*.
-\end{split}
-\end{equation*}
-
-\begin{lemma}
-    \label{strang:lemupper_2}
-    Let $A_1, A_2 \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_1} \leq p$ and $\operatorname{rank}{A_2} \leq p$. While the sum of those matrices has full rank, i.e. $A = A_1 + A_2, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
-
-    \begin{equation}\label{strang:lemupper}
-        \lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \|(I - Q_2Q_2^*)(I - Q_1Q_1^*)\|
-    \end{equation}
-\end{lemma}
-\begin{proof}
-    The proof is straightforward. We will use the low rank matrix exponential decomposition from the Lemma \ref{strang:lemexp}
-    $$
-    e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
-    $$
-    \begin{align*}
-    &\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \\ 
-    &= \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
-    &= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* + \\
-    &+  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| =\\&= \Pi_2 \Pi_1
-    \end{align*}
-    Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
-\end{proof}
-
-\begin{figure}[h!]
-    \begin{subfigure}[t]{0.49\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{upper_bound_2.pdf}
-            \caption{{\small Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}}
-            \label{strang:fig:upper_bound_2}
-    \end{subfigure}%
-    \hfill
-    \begin{subfigure}[t]{0.49\textwidth}
-            \centering
-            \includegraphics[width=\linewidth]{upper_bound_many.pdf}
-            \caption{{\small Global upper bound on the splitting scheme in case of $40$ summands in the right-hand side.}}
-            \label{strang:fig:upper_bound_many}
-    \end{subfigure}
-\end{figure}
-
-The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One can easily see significant difference between existing global upper bounds for that case \citet{sheng1994global} and derived upper bound.
-
-\begin{theorem}\label{strang:theorem_uppbound}
-    Let $A_1, A_2, \ldots, A_b \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_i} \leq p, \;\forall i = 1, \ldots, b$. While the sum of those matrices has full rank, i.e. $A = \sum\limits_{i=1}^b A_i, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
-
-    \begin{equation}\label{strang:global_error_upper_bound}
-        \lim_{t \to \infty}\| e^{A_bt} \cdot \ldots \cdot e^{A_1t} - e^{At}\| = \left\|\prod\limits_{i=1}^b \Pi_{b-i+1}\right\|,
-    \end{equation}
-    where $\Pi_i = I - Q_iQ_i^*$ and $A_i = Q_iB_iQ_i^*$ and $Q_i$ is a matrix with orthonormal columns. 
-\end{theorem}
-
-The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validity of the presented upper bound.
-
-
-%================================================
-% Proofs
-%================================================
-
-\section{Proofs}
-
-\llsls*
-
-\begin{proof}
-Given $X_i^\top = Q_i R_i$, we have $(I - Q_iQ_i^\top)X_i^\top = 0$. Note, that $Q_i$ is left unitary matrix, i.e. $Q_i^\top Q_i = I$. 
-\begin{align}
-\nonumber \frac{d \vect{\theta}}{d t} &= - \frac{1}{n}X_i^\top(X_i \vect{\theta} - \vect{y_i}) \\
-\nonumber (I - Q_iQ_i^\top)\frac{d \vect{\theta}}{d t} &= 0 \\
-\nonumber \frac{d \vect{\theta}}{d t} &= Q_i\frac{d (Q_i^\top\vect{\theta})}{d t} \quad Q_i^\top \vect{\theta} = \vect{\eta_i}\\ 
-\nonumber \frac{d \vect{\theta}}{d t} &= Q_i\frac{d \vect{\eta_i}}{d t} \quad \text{integrate from $0$ to $h$}\\ 
-\label{strang:lls_theorem_theta_from_eta}\vect{\theta}(h) &= Q_i \left(\vect{\eta_i}(h) - \vect{\eta_i}(0) \right) + \vect{\theta}_0
-\end{align}
-
-On the other hand:
-\begin{align}\nonumber
-\frac{d \vect{\eta_i}}{d t} &= Q_i^\top\frac{d \vect{\theta}}{d t} =  - \frac{1}{n} Q_i^\top X_i^\top(X_i \vect{\theta} - \vect{y_i}) = \\ 
-\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i( R_i^\top Q_i^\top \vect{\theta} - \vect{y_i}) =\\
-&= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i} - R_i \vect{y_i}\right) \label{strang:lls_theorem_eta_from_theta}
-\end{align}
-
-Consider the moment of time $t = \infty$. $\frac{d \vect{\eta_i}}{d t} = 0$, since $\exists \vect{\theta}^*, Q_i^\top \vect{\theta}^* = \vect{\eta_i}^*$. Also consider \eqref{strang:lls_theorem_eta_from_theta}:
-
-\begin{equation}\label{strang:lls_theorem_eta_star}
-\begin{split}
-\frac{d \vect{\eta_i}}{d t} = 0 &= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i}^* - R_i \vect{y_i}\right) \\ R_i \vect{y_i} &= R_iR_i^\top \vect{\eta_i}^*
-\end{split}
-\end{equation}
-
-Now we look at the \eqref{strang:lls_theorem_eta_from_theta} with the replacement, given in \eqref{strang:lls_theorem_eta_star}:
-
-\begin{align*}
-\frac{d \vect{\eta_i}}{d t} &= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i}- R_iR_i^\top \vect{\eta_i}^*\right) \\
-\frac{d \vect{\eta_i}}{d t} &= - \frac{1}{n} R_iR_i^\top \left( \vect{\eta_i}- \vect{\eta_i}^*\right) \qquad \text{integrate from $0$ to $h$} \\
-\vect{\eta_i}(h) - \vect{\eta_i}^* &= e^{- \frac{1}{n} R_iR_i^\top h} (\vect{\eta_i}(0) - \vect{\eta_i}^*) \\ 
-&\text{while } \vect{\eta_i}^* = R_i^{-\top}\vect{y_i}, \vect{\eta_i}(0) = Q_i^\top \vect{\theta}_0 \\
-\vect{\eta_i}(h) &= e^{- \frac{1}{n} R_iR_i^\top h} (Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}) + R_i^{-\top}\vect{y_i} 
-\end{align*}
-
-Using \eqref{strang:lls_theorem_theta_from_eta} we obtain the target formula
-\begin{equation*}
-\begin{split}
-\vect{\theta}(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + \\ &+ Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0,
-\end{split}
-\end{equation*}
-
-\end{proof}
-
-\begin{lemma}\label{strang:lemexp}
-Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
-\begin{equation}\label{strang:lrexp}
-    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
-\end{equation}
-\end{lemma}
-To prove \eqref{strang:lrexp} we note that
-\begin{equation*}
-\begin{split}
-e^{t A} &= \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} = \\ &= I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = \\ &= (I - QQ^*) + Q e^{t B} Q^*.
-\end{split}
-\end{equation*}
-
-\begin{lemma}
-    \label{strang:lemupper_2}
-    Let $A_1, A_2 \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_1} \leq p$ and $\operatorname{rank}{A_2} \leq p$. While the sum of those matrices has full rank, i.e. $A = A_1 + A_2, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
-
-    \begin{equation}\label{strang:lemupper}
-        \lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \|(I - Q_2Q_2^*)(I - Q_1Q_1^*)\|
-    \end{equation}
-\end{lemma}
-\begin{proof}
-    The proof is straightforward. We will use the low rank matrix exponential decomposition from the Lemma \ref{strang:lemexp}
-    $$
-    e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
-    $$
-    \begin{align*}
-    &\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \\ 
-    &= \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
-    &= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* + \\
-    &+  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| =\\&= \Pi_2 \Pi_1
-    \end{align*}
-    Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
-\end{proof}
-
-%================================================
-% Applications
-%================================================
-
-\section{Applications}
 \subsection{Linear least squares}
 \subsubsection{Problem}
 Let $f_i(\vect{\theta}) = \Vert \vect{x_i}^{\top} \vect{\theta} - y_i \Vert^2$, then problem \eqref{strang:finitesum} is the linear least squares problem, which can be written as
-\begin{equation}\label{strang:LLS}
+\begin{equation}\label{strang:LLS_app}
    f(\vect{\theta}) = \frac{1}{n}\Vert X \vect{\theta} - \vect{y} \Vert_2^2  = \frac{1}{n}\sum\limits_{i=1}^s\Vert X_i \vect{\theta} - \vect{y_i} \Vert_2^2\to \min_{\vect{\theta} \in \mathbb{R}^p},
 \end{equation}
 where $X \in \mathbb{R}^{n \times p}$ and $\vect{y} \in \mathbb{R}^p$ and the second part of the equation stands for $s$ mini-batches with size $b$ regrouping ($b \cdot s = n$): $X_i \in \mathbb{R}^{b \times p}, \vect{y_i} \in \mathbb{R}^{b}$
@@ -488,14 +204,17 @@ The gradient flow equation will be written as follows:
 \frac{d \vect{\theta}}{d t} = - \frac{1}{n}\sum\limits_{i=1}^s X_i^\top( X_i \vect{\theta} - \vect{y_i})
 \end{equation}
 
-\subsubsection{Exact solution of the local problem}
-Theorem \ref{strang:LLS_local_solution} gives us explicit formula for the local solution:
-$$
-\vect{\theta}(h) = Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0
-$$
+There is an analytical solution for each local ODE in linear least squares case:
 
-\subsubsection{Kaczmarz as the limit case of splitting}
-Kaczmarz method \citet{kaczmarz1937method}, \citet{strohmer2009randomized}, \citet{gower2015randomized} is a well-known iterative algorithm for solving linear systems
+\begin{restatable}{theorem}{llsls}\label{strang:LLS_local_solution} For any matrix $\vect{x_i} \in \mathbb{R}^{b \times p}, b \leq p, \text{rank}X_i = b$, any vector of right-hand side $\vect{y_i} \in \mathbb{R}^{b}$ and initial vector of parameters $\vect{\theta}_0$, there is a solution of the $\frac{d \vect{\theta}}{d t} = - \frac{1}{n} X_i^\top( X_i \vect{\theta} - \vect{y_i})$, given by formula:
+\begin{equation}\label{strang:LLS_local_solution_formula}
+\vect{\theta}(h) = Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0,
+\end{equation}
+where $Q_i \in \mathbb{R}^{p \times b}$ and $R_i \in \mathbb{R}^{b \times b}$ stands for the $QR$ decomposition of the matrix $\vect{X_i}^\top$, $\vect{X_i}^\top = Q_i R_i$.
+\end{restatable}
+
+\subsubsection{Kaczmarz as the limit case of splitting in linear least squares}
+Kaczmarz method \citet{kaczmarz1937method}, \citet{strohmer2009randomized}, \citet{gower2015randomized} is a well-known iterative algorithm for solving linear systems.
 It is interesting to mention, that splitting approach immediately leads to the Kaczmarz method for solving linear system in the same setting with unit batch size.
 
 When the batch size is equal to one, we need to do $n$ QR decompositions for each transposed batch matrix, which is just column vector $\vect{x_i}$ in our case:
@@ -637,5 +356,282 @@ On the other hand:
 \end{align}
 
 Now we need to solve ODE of variable of the size $b \times k$, rather, than $p \times k$.
+
+
+%================================================
+% Results
+%================================================
+
+\section{Results}
+
+In this section, we describe the experimental setting. The majority of computations were performed on the NVIDIA DGX-2 cluster with 80 CPUs and 512 Gb RAM. We restricted the number of CPU usage per each experiment with an upper limit of 5 CPUs per experiment. All time measurements were done with the time library for Python. All experiments were done with the fixed random seed for reproducibility. For each experiment we performed 30 runs with random initialization and plotted trend line with the standard deviation.
+
+\textbf{Linear Least Squares}  Both random and the real linear systems were tested. For random linear system (\texttt{random lls}) we generated $10000\times500$ matrix with additive Gaussian noise of magnitude $0.01$. Presented figures correspond to the batch size equals to $20$. The real linear system (\texttt{tom lls}) is the standard tomography data from AIRTools II \citet{hansen2018air}. Solution of the linear system is the $50 \times 50$ image reconstructed from solving $12780 \times 2500$ linear system. Presented figures correspond to the batch size equals to $60$. Relative error $10^{-3}$ was used as the stopping criterion.
+
+\textbf{Binary Logistic Regression}  (\texttt{logreg}) In our experiments we used two classes from MNIST \citet{lecun1998gradient} dataset, which corresponds to the $0$ and $1$ digits. The size of the batch for presented figure is $50$. Test error $0.001$ was used as the stopping criterion.
+
+\textbf{Softmax Logistic Regression} (\texttt{softmax}) We took Fashion MNIST \citet{xiao2017fashion} dataset with $60000$ grayscale pictures from $10$ classes. Each example is $28 \times 28$ image. The size of the batch for presented figure is $64$. Test error $0.25$ was used as the stopping criterion.
+
+On the figures below we have two labels: \texttt{SGD} and \texttt{Splitting}, which stands for batch stochastic gradient descent and proposed algorithm. We use different constant learning rates to perform our experiments. All the learning rates tested for both algorithms. Lack of point of one algorithm on the graph means reaching the limit of iterations without achieving the termination rule.
+
+\begin{figure}[h!]
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{LLS_iter.pdf}
+            \caption{{\small \texttt{Random LLS}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{LLS_tom_iter.pdf}
+            \caption{{\small \texttt{Tom LLS}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{Logreg_iter.pdf}
+            \caption{{\small \texttt{LogReg}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{{Softmax_fashion_mnist_iter_err0.25}.pdf}
+            \caption{{\small \texttt{Softmax}}}
+    \end{subfigure}
+\end{figure}
+
+As it is expected, SGD diverges starting from some value of learning rate, which is specific for each problem. While we can see comparative robustness of the proposed splitting optimization approach.
+
+\begin{figure}[h!]
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{LLS_time.pdf}
+            \caption{{\small \texttt{Random LLS}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{LLS_tom_time.pdf}
+            \caption{{\small \texttt{Tom LLS}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{Logreg_time.pdf}
+            \caption{{\small \texttt{LogReg}}}
+    \end{subfigure}%
+    \begin{subfigure}[b]{0.25\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{{Softmax_fashion_mnist_time_err0.25}.pdf}
+            \caption{{\small \texttt{Softmax}}}
+    \end{subfigure}
+\end{figure}
+
+\section{Upper bound on the global splitting error}
+
+During our experiments with linear least squares we observed, that the real error of splitting scheme is bounded, but existing upper bounds typically don't reflect this. Since we considered splitting approach on a specific type of problems, where the original data matrix has full rank structure, while all the batch versions don't. 
+
+\begin{figure}[h!]
+    \begin{subfigure}[t]{0.49\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{upper_bound_2.pdf}
+            \caption{{\small Global error of the splitting scheme. Initial random full rank matrix $X \in \mathbb{R}^{100 \times 100}$ was splitted by rows. $X_1, X_2 \in \mathbb{R}^{50 \times 100}$. Target matrices were obtained the following way: $A_1 = -X_1^*X_1, A_2 = -X_2^*X_2, A = -X^*X$. So $A_1, A_2$ are negative and lacking full rank, while $A = A_1 + A_2$ has full rank.}}
+            \label{strang:fig:upper_bound_2}
+    \end{subfigure}%
+    \hfill
+    \begin{subfigure}[t]{0.49\textwidth}
+            \centering
+            \includegraphics[width=\linewidth]{upper_bound_many.pdf}
+            \caption{{\small Global upper bound on the splitting scheme in case of $40$ summands in the right-hand side.}}
+            \label{strang:fig:upper_bound_many}
+    \end{subfigure}
+\end{figure}
+
+The graph presented on the Figure \ref{strang:fig:upper_bound_2} describes . One can easily see significant difference between existing global upper bounds for that case \citet{sheng1994global} and derived upper bound.
+
+\begin{theorem}\label{strang:theorem_uppbound}
+    Let $A_1, A_2, \ldots, A_b \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_i} \leq p, \;\forall i = 1, \ldots, b$. While the sum of those matrices has full rank, i.e. $A = \sum\limits_{i=1}^b A_i, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
+
+    \begin{equation}\label{strang:global_error_upper_bound}
+        \lim_{t \to \infty}\| e^{A_bt} \cdot \ldots \cdot e^{A_1t} - e^{At}\| = \left\|\prod\limits_{i=1}^b \Pi_{b-i+1}\right\|,
+    \end{equation}
+    where $\Pi_i = I - Q_iQ_i^*$ and $A_i = Q_iB_iQ_i^*$ and $Q_i$ is a matrix with orthonormal columns. 
+\end{theorem}
+
+The graph on the Figure \ref{strang:fig:upper_bound_many} shows empirical validity of the presented upper bound.
+
+
+
+%================================================
+% Related work
+%================================================
+
+\section{Related work}
+In this work, we presented another point of view on the nature of stochasticity in the stochastic gradient algorithms. From this perspective, different splitting schemes yield different stochastic gradient algorithms. We focused on the first-order splitting scheme for ODE, which corresponds to the SGD with the constant learning rate. Given this tractable setting, we performed a systematic empirical study of the local problem integration influence on the quality of the approximation scheme in machine learning problems. While the question of using these ideas to make general-purpose optimizer remains open, splitting optimization approach showed itself quite robust to the hyperparameter tuning for particular practical problems. Appendix to the paper contains proofs of the theorems and a new global error upper bounds for the first-order splitting for the special case.
+In \citet{su2014differential}  authors introduced second order ODE, which is equivalent (in the limit sense) to the gradient descent with Nesterov momentum \citet{nesterov1983method}.  Generalization of these ideas was presented in \citet{wibisono2016variational} with an arbitrary polynomial acceleration using the same parameter in ODE. General overview of the interplay between continuous-time and discrete-time points of view on dynamical systems and iterative optimization methods is covered in \citet{helmke2012optimization}, \citet{evtushenko1994stable}
+
+%================================================
+% References
+%================================================
+
+\newpage
+{ \small
+\bibliography{biblio}}
+
+%================================================
+% APPENDIX
+%================================================
+
+\appendix
+
+%================================================
+% SPLITTING GLOBAL ERROR
+%================================================
+
+
+
+
+%================================================
+% Proofs
+%================================================
+
+\section{Proofs}
+
+\llsls*
+
+\begin{proof}
+Given $X_i^\top = Q_i R_i$, we have $(I - Q_iQ_i^\top)X_i^\top = 0$. Note, that $Q_i$ is left unitary matrix, i.e. $Q_i^\top Q_i = I$. 
+\begin{align}
+\nonumber \frac{d \vect{\theta}}{d t} &= - \frac{1}{n}X_i^\top(X_i \vect{\theta} - \vect{y_i}) \\
+\nonumber (I - Q_iQ_i^\top)\frac{d \vect{\theta}}{d t} &= 0 \\
+\nonumber \frac{d \vect{\theta}}{d t} &= Q_i\frac{d (Q_i^\top\vect{\theta})}{d t} \quad Q_i^\top \vect{\theta} = \vect{\eta_i}\\ 
+\nonumber \frac{d \vect{\theta}}{d t} &= Q_i\frac{d \vect{\eta_i}}{d t} \quad \text{integrate from $0$ to $h$}\\ 
+\label{strang:lls_theorem_theta_from_eta}\vect{\theta}(h) &= Q_i \left(\vect{\eta_i}(h) - \vect{\eta_i}(0) \right) + \vect{\theta}_0
+\end{align}
+
+On the other hand:
+\begin{align}\nonumber
+\frac{d \vect{\eta_i}}{d t} &= Q_i^\top\frac{d \vect{\theta}}{d t} =  - \frac{1}{n} Q_i^\top X_i^\top(X_i \vect{\theta} - \vect{y_i}) = \\ 
+\nonumber&= - \frac{1}{n} Q_i^\top  Q_i R_i( R_i^\top Q_i^\top \vect{\theta} - \vect{y_i}) =\\
+&= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i} - R_i \vect{y_i}\right) \label{strang:lls_theorem_eta_from_theta}
+\end{align}
+
+Consider the moment of time $t = \infty$. $\frac{d \vect{\eta_i}}{d t} = 0$, since $\exists \vect{\theta}^*, Q_i^\top \vect{\theta}^* = \vect{\eta_i}^*$. Also consider \eqref{strang:lls_theorem_eta_from_theta}:
+
+\begin{equation}\label{strang:lls_theorem_eta_star}
+\begin{split}
+\frac{d \vect{\eta_i}}{d t} = 0 &= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i}^* - R_i \vect{y_i}\right) \\ R_i \vect{y_i} &= R_iR_i^\top \vect{\eta_i}^*
+\end{split}
+\end{equation}
+
+Now we look at the \eqref{strang:lls_theorem_eta_from_theta} with the replacement, given in \eqref{strang:lls_theorem_eta_star}:
+
+\begin{align*}
+\frac{d \vect{\eta_i}}{d t} &= - \frac{1}{n} \left( R_iR_i^\top \vect{\eta_i}- R_iR_i^\top \vect{\eta_i}^*\right) \\
+\frac{d \vect{\eta_i}}{d t} &= - \frac{1}{n} R_iR_i^\top \left( \vect{\eta_i}- \vect{\eta_i}^*\right) \qquad \text{integrate from $0$ to $h$} \\
+\vect{\eta_i}(h) - \vect{\eta_i}^* &= e^{- \frac{1}{n} R_iR_i^\top h} (\vect{\eta_i}(0) - \vect{\eta_i}^*) \\ 
+&\text{while } \vect{\eta_i}^* = R_i^{-\top}\vect{y_i}, \vect{\eta_i}(0) = Q_i^\top \vect{\theta}_0 \\
+\vect{\eta_i}(h) &= e^{- \frac{1}{n} R_iR_i^\top h} (Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}) + R_i^{-\top}\vect{y_i} 
+\end{align*}
+
+Using \eqref{strang:lls_theorem_theta_from_eta} we obtain the target formula
+\begin{equation*}
+\begin{split}
+\vect{\theta}(h) &= Q_i e^{-\frac{1}{n}R_iR_i^\top h} \left( Q_i^\top \vect{\theta}_0 - R_i^{-\top}\vect{y_i}\right) + \\ &+ Q_iR_i^{-\top}\vect{y_i} + (I - Q_iQ_i^\top)\vect{\theta}_0,
+\end{split}
+\end{equation*}
+
+\end{proof}
+
+\begin{lemma}\label{strang:lemexp}
+Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
+\begin{equation}\label{strang:lrexp}
+    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
+\end{equation}
+\end{lemma}
+To prove \eqref{strang:lrexp} we note that
+\begin{equation*}
+\begin{split}
+e^{t A} &= \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} = \\ &= I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = \\ &= (I - QQ^*) + Q e^{t B} Q^*.
+\end{split}
+\end{equation*}
+
+\begin{lemma}
+    \label{strang:lemupper_2}
+    Let $A_1, A_2 \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_1} \leq p$ and $\operatorname{rank}{A_2} \leq p$. While the sum of those matrices has full rank, i.e. $A = A_1 + A_2, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
+
+    \begin{equation}\label{strang:lemupper}
+        \lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \|(I - Q_2Q_2^*)(I - Q_1Q_1^*)\|
+    \end{equation}
+\end{lemma}
+\begin{proof}
+    The proof is straightforward. We will use the low rank matrix exponential decomposition from the Lemma \ref{strang:lemexp}
+    $$
+    e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
+    $$
+    \begin{align*}
+    &\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \\ 
+    &= \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
+    &= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* + \\
+    &+  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| =\\&= \Pi_2 \Pi_1
+    \end{align*}
+    Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
+\end{proof}
+
+%================================================
+% Applications
+%================================================
+
+\section{Upper bound}
+
+Suppose, that we have only two batches, and the linear least squares problem from Table \ref{strang:table_problems} is consistent, i.e. there exists an exact solution $\vect{\theta}_*$ such as $X \vect{\theta}_* = \vect{y}$. The GD flow has the form
+\begin{equation}\label{strang:model1}
+\begin{split}
+    \frac{d \vect{\theta}}{d t} &= -X^{\top} (X \vect{\theta} - \vect{y}) = -X^{\top} X(\vect{\theta} - \vect{\theta}_*) =\\ &= -(X_1^{\top} X_1 + X^{\top}_2 X_2)(\vect{\theta} - \vect{\theta}_*),
+\end{split}
+\end{equation}
+i.e. the splitting scheme corresponds to a linear operator splitting
+
+\begin{equation*}
+A = A_1 + A_2, \; A = -X^{\top} X, \; A_i = -X^{\top}_i X_i, \; i = 1, 2.
+\end{equation*}
+
+Both $A_1$ and $A_2$ are symmetric non-negative definite matrices. Without loss of generality, we can assume that $\vect{\theta}_* = 0$,
+
+Suppose that the rank of $A$ is $r_1$ and the rank of $A_2$ is $r_2$. Then, we can write them as
+\begin{equation*}
+A_i = Q_i B_i Q^*_i,
+\end{equation*}
+where $Q_i$ is an $N \times r_i$ matrix with orthonormal columns.  The following Lemma gives the representation of the matrix exponents of such matrices.
+\begin{lemma}\label{strang:lemexp}
+Let $A = Q B Q^*,$ where $Q$ is an $N \times r$ matrix with orthonormal columns, and $B$ is an $r \times r$ matrix. Then,
+\begin{equation}\label{strang:lrexp}
+    e^{t A}  = (I - QQ^*) + Q e^{t B} Q^*.
+\end{equation}
+\end{lemma}
+To prove \eqref{strang:lrexp} we note that
+\begin{equation*}
+\begin{split}
+e^{t A} &= \sum_{k=0}^{\infty} \frac{t^k A^k}{k!} = \sum_{k=0}^{\infty} \frac{t^k Q B^k Q^*}{k!} = \\ &= I - QQ^* + QQ^* + Q \sum_{k=1}^{\infty} \frac{t^k B^k}{k!} Q^* = \\ &= (I - QQ^*) + Q e^{t B} Q^*.
+\end{split}
+\end{equation*}
+
+\begin{lemma}
+    \label{strang:lemupper_2}
+    Let $A_1, A_2 \in \mathbb{S}^p_{+}$ be the square negative semidefinite matrices, that don't have full rank, i.e. $\operatorname{rank}{A_1} \leq p$ and $\operatorname{rank}{A_2} \leq p$. While the sum of those matrices has full rank, i.e. $A = A_1 + A_2, \operatorname{rank}{A} = p$. Then, the global upper bound error will be written as follows:
+
+    \begin{equation}\label{strang:lemupper}
+        \lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \|(I - Q_2Q_2^*)(I - Q_1Q_1^*)\|
+    \end{equation}
+\end{lemma}
+\begin{proof}
+    The proof is straightforward. We will use the low rank matrix exponential decomposition from the Lemma \ref{strang:lemexp}
+    $$
+    e^{A_it} = \Pi_i + Q_i e^{B_it} Q_i^*, \text{where } \Pi_i = I - Q_iQ_i^*; i = 1,2
+    $$
+    \begin{align*}
+    &\lim_{t \to \infty}\| e^{A_2t}e^{A_1t} - e^{At}\| = \\ 
+    &= \lim_{t \to \infty}\| (\Pi_2 + Q_2 e^{B_2t} Q_2^*)(\Pi_1 + Q_1 e^{B_1t} Q_1^*) - e^{At}\| = \\
+    &= \lim_{t \to \infty}\| \Pi_2\Pi_1 + Q_1 e^{B_1t} Q_1^*\Pi_2 + \Pi_1Q_2 e^{B_2t} Q_2^* + \\
+    &+  Q_1 e^{B_1t} Q_1^* Q_2 e^{B_2t} Q_2^* - e^{At}\| =\\&= \Pi_2 \Pi_1
+    \end{align*}
+    Since all matrices $B_1, B_2, A$ are negative all the matrix exponentials are decaying: $\|e^{At}\|\leq e^{t\mu (A)}\, \forall t\geq 0$, where $\mu(A) = \lambda_{max} \left( \frac{A + A^\top}{2}\right)$ - the logarithmic norm.
+\end{proof}
+
 
 \end{document}
